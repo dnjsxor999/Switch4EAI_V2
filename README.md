@@ -5,7 +5,7 @@ Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting)
 
 1) Clone with submodules
 ```
-git clone --recursive <this-repo-url> Switch4EAI
+git clone --recursive https://github.com/dnjsxor999/Switch4EAI_temp.git Switch4EAI
 cd Switch4EAI
 ```
 
@@ -30,17 +30,25 @@ Notes:
 
 ## Usage
 
-Online GVHMR demo (single-thread):
+Online GVHMR demo from video (single-thread):
 ```
 python scripts/online_gvhmr_test.py --video=/path/to/video.mp4 --win_size=30 -s
 ```
 
-Stream -> GVHMR -> GMR (single-thread):
+Offline retarget trajectory from GVHMR result(all hmr4d_results.pt):
+```
+./scripts/run_offline_gvhmr_to_gmr.sh \
+     --src_folder /path/to/gvhmr_outputs \
+     --tgt_folder /path/to/save_robot_dataset \
+     --robot unitree_g1 --record_video --offset_ground --joint_vel_limit
+```
+
+Real-time demo: Stream -> GVHMR -> GMR (single-thread):
 ```
 python scripts/run_stream_to_robot.py
 ```
 
-Stream -> GVHMR -> GMR (multi-thread, lag=6 frames):
+Real-time demo: Stream -> GVHMR -> GMR (multi-thread, lag=6 frames):
 ```
 python scripts/run_stream_to_robot_mt.py
 ```
@@ -50,8 +58,8 @@ To enable UDP output, edit `Switich4EmbodiedAI/modules/pipeline.py` defaults or 
 from Switich4EmbodiedAI.modules.pipeline import PipelineConfig
 cfg = PipelineConfig()
 cfg.udp_enabled = True
-cfg.udp_ip = "127.0.0.1"
-cfg.udp_send_port = 54010
+cfg.udp_ip = "xxx.0.0.x"
+cfg.udp_send_port = 11111
 ```
 
 ## Project structure
