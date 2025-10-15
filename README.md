@@ -1,5 +1,5 @@
 # Switch4EAI
-Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting) with live streaming, multi-threaded execution, and UDP output.
+<!--Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting) with live streaming, multi-threaded execution, and UDP output.-->
 This repository is the next version of the previous [Switch4EmbodiedAI](https://github.com/EasyPaperSniper/Switch4EmbodiedAI)
 
 ## Installation (single conda env)
