@@ -1,0 +1,11 @@
+# Ignore macOS DS_Store
+**/.DS_Store
+
+# Python build & cache
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Project outputs
+outputs/
+docs/
