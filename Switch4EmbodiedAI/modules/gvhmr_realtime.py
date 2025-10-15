@@ -165,10 +165,10 @@ class GVHMRRealtime:
         }
 
         pred_w = self.model.predict(data_window, static_cam=self.cfg.static_cam)
-        pred_w = {k: {kk: vv.detach().cpu() for kk, vv in v.items()} for k, v in pred_w.items()}
+        # pred_w = {k: {kk: vv.detach().cpu() for kk, vv in v.items()} for k, v in pred_w.items()}
 
         last_idx = -1
-        smpl_params_global = {k: v[last_idx] for k, v in pred_w["smpl_params_global"].items()}
+        smpl_params_global = {k: v[last_idx].detach().cpu() for k, v in pred_w["smpl_params_global"].items()}
         return {"smpl_params_global": smpl_params_global}
 
 
