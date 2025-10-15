@@ -16,6 +16,8 @@ GMR_ROOT = REPO_ROOT / "third_party" / "GMR"
 if GMR_ROOT.exists():
     sys.path.insert(0, str(GMR_ROOT))
 from general_motion_retargeting.utils.smpl import get_smplx_data # type: ignore
+import general_motion_retargeting.utils.lafan_vendor.utils as gmr_utils # type: ignore
+from scipy.spatial.transform import Rotation as R
 import smplx
 
 
@@ -90,6 +92,14 @@ class StreamToRobotPipeline:
             return_full_pose=True,
         )
         per_frame = get_smplx_data(smplx_data, self.body_model, smplx_output, curr_frame=0)
+
+        # Align coordinate frames to match offline pipeline (rotate to robot frame)
+        rotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        rotation_quat = R.from_matrix(rotation_matrix).as_quat(scalar_first=True)
+        for joint_name in per_frame.keys():
+            orientation = gmr_utils.quat_mul(rotation_quat, per_frame[joint_name][1])
+            position = per_frame[joint_name][0] @ rotation_matrix.T
+            per_frame[joint_name] = (position, orientation)
 
         if self.cfg.gmr.visualize:
             qpos = self.gmr.vis_step(per_frame)
