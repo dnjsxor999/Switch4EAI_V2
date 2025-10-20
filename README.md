@@ -1,4 +1,4 @@
-# Switch4EAI
+# Switch4EAI_V2
 Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting) with live streaming, multi-threaded execution, and UDP output.
 
 ## Installation
