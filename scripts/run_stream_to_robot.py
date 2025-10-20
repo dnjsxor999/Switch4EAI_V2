@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+import argparse
+import cv2
 
 # Ensure repo root is importable before importing our package modules
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -9,8 +11,35 @@ from Switch4EmbodiedAI.modules.pipeline import StreamToRobotPipeline, PipelineCo
 from Switch4EmbodiedAI.modules.UDPcomm_module import UDPComm
 
 
+def probe_cameras(max_index: int = 10):
+    available = []
+    for idx in range(max_index + 1):
+        cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+        if cap.isOpened():
+            available.append(idx)
+            cap.release()
+    return available
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--camera", type=int, default=None, help="Video capture index (e.g., 0,1,2)")
+    parser.add_argument("--video", type=str, default=None, help="Path to a video file to stream instead of camera")
+    parser.add_argument("--list-cams", action="store_true", help="List available camera indices and exit")
+    args = parser.parse_args()
+
+    if args.list_cams:
+        cams = probe_cameras(10)
+        print(f"Available cameras: {cams if cams else 'None detected'}")
+        return
+
     cfg = PipelineConfig()
+    if args.camera is not None:
+        cfg.stream.capture_card_index = args.camera
+        cfg.stream.source = "camera"
+    if args.video is not None:
+        cfg.stream.source = "video"
+        cfg.stream.video_path = args.video
     pipeline = StreamToRobotPipeline(cfg)
     client = None
     if cfg.udp_enabled:

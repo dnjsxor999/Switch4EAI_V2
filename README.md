@@ -1,7 +1,7 @@
 # Switch4EAI
 Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting) with live streaming, multi-threaded execution, and UDP output.
 
-## Installation (single conda env)
+## Installation
 
 1) Clone with submodules
 ```
@@ -30,12 +30,12 @@ Notes:
 
 ## Usage
 
-Online GVHMR demo from video (single-thread):
+**Online** GVHMR demo from video (single-thread):
 ```
 python scripts/online_gvhmr_test.py --video=/path/to/video.mp4 --win_size=30 -s
 ```
 
-Offline retarget trajectory from GVHMR result(all hmr4d_results.pt):
+**Offline** retarget GMR trajectory from GVHMR result(all hmr4d_results.pt):
 ```
 ./scripts/run_offline_gvhmr_to_gmr.sh \
      --src_folder /path/to/gvhmr_outputs \
@@ -43,15 +43,74 @@ Offline retarget trajectory from GVHMR result(all hmr4d_results.pt):
      --robot unitree_g1 --record_video --offset_ground --joint_vel_limit
 ```
 
-Real-time demo: Stream -> GVHMR -> GMR (single-thread):
+**Real-time** demo: Stream -> GVHMR -> GMR (single-thread):
 ```
-python scripts/run_stream_to_robot.py
+python scripts/run_stream_to_robot.py                # default /dev/video0 (with hardware)
+python scripts/run_stream_to_robot.py --list-cams    # list available cameras (with hardware)
+python scripts/run_stream_to_robot.py --camera=1     # select /dev/video1 (with hardware)
+python scripts/run_stream_to_robot.py --video=/path/to/video.mp4  # for test without hardware (unstable) -> only recommend to check process of pipeline
 ```
 
-Real-time demo: Stream -> GVHMR -> GMR (multi-thread, lag=6 frames):
+**Real-time** demo: Stream -> GVHMR -> GMR (multi-thread, lag=6 frames):
 ```
-python scripts/run_stream_to_robot_mt.py
+python scripts/run_stream_to_robot_mt.py --list-cams
+python scripts/run_stream_to_robot_mt.py --camera=1
+python scripts/run_stream_to_robot_mt.py --video=/path/to/video.mp4
 ```
+
+### Real-time with Nintendo Switch (capture card)
+
+1) Hardware hookup
+- Connect Nintendo Switch HDMI OUT → capture card HDMI IN
+- Connect capture card USB to your Ubuntu machine
+- Verify device appears (e.g., `/dev/video0`, `/dev/video1`)
+
+2) Discover the correct camera index
+```
+python scripts/run_stream_to_robot.py --list-cams
+# Example: Available cameras: [1]
+```
+
+3) Run the pipeline
+```
+python scripts/run_stream_to_robot.py --camera=1
+```
+
+4) Troubleshooting
+- If OpenCV fails to open the device, try another index or ensure no other app is using it
+- Check permissions (your user in `video` group), and that `/dev/videoN` exists
+
+### Configuration reference
+- `SimpleStreamModuleConfig` in `Switch4EAI/modules/stream_modules.py`
+  - capture_card_index (int): camera index matching `/dev/videoN`
+  - source (str): "camera" or "video" (for "video" only recommend to check process of pipeline)
+  - video_path (str|None): path to a test video when source=="video"
+  - loop_video (bool): loop video when it ends
+- `GVHMRRealtimeConfig` in `Switch4EAI/modules/gvhmr_realtime.py`
+  - win_size (int): sliding window length, buffer size (higher = more latency, stabler)
+  - static_cam (bool): only static cam is supported here (leave True)
+  - use_dpvo (bool): not wired in this repo (leave False)
+  - f_mm (int|None): focal length override (leave False)
+  - verbose (bool): (leave False)
+- `GMRConfig` in `Switch4EAI/modules/gmr_retarget.py`
+  - robot (str): target robot name
+  - visualize (bool): open viewer and return qpos per step; else headless
+  - step_full (bool): in headless mode, include local_body_pos
+  - record_video (bool), video_path (str|None)
+  - rate_limit, joint_vel_limit, collision_avoid, offset_ground (bool)
+
+### Outputs per step
+- If `cfg.gmr.visualize = True` (viewer on):
+  - Pipeline returns `{ "qpos": np.ndarray }`
+  - qpos layout: `[root_pos(3), root_rot(4, wxyz), dof_pos(...)]`
+- If `cfg.gmr.visualize = False` (headless):
+  - Pipeline returns `{ "motion_data": dict }`
+  - motion_data contains:
+    - `fps`: int
+    - `root_pos`: shape (1, 3)
+    - `root_rot`: shape (1, 4) as xyzw
+    - `dof_pos`: shape (1, dof_dim)
+    - if `step_full=True`: `local_body_pos`: shape (1, num_bodies, 3)
 
 To enable UDP output, edit `Switich4EmbodiedAI/modules/pipeline.py` defaults or set in code:
 ```python
@@ -66,7 +125,7 @@ cfg.udp_send_port = 11111
 
 - `third_party/GVHMR`: upstream GVHMR
 - `third_party/GMR`: upstream GMR
-- `Switich4EmbodiedAI/modules`: wrapper modules
+- `Switich4EmbodiedAI/modules`: modules
   - `stream_module.py`: camera capture
   - `gvhmr_realtime.py`: sliding-window GVHMR per-frame inference
   - `gmr_retarget.py`: per-frame retargeting and optional visualization
@@ -83,3 +142,25 @@ cfg.udp_send_port = 11111
 - If imports like `hmr4d` or `general_motion_retargeting` fail, ensure you ran the `pip install -e` steps above.
 - On first run, ultralytics may download YOLO weights if not found at `third_party/GVHMR/inputs/checkpoints/yolo/yolov8x.pt`.
 - For non-static cameras, additional VO integration would be needed (not provided by default).
+
+## UDP send/receive example
+
+Sender is already built into the runners (set in `PipelineConfig` or edit defaults, see above.)
+
+Minimal UDP receiver to test:
+```python
+import socket, struct
+
+UDP_IP = "xxx.0.0.x"
+UDP_PORT = 11111
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((UDP_IP, UDP_PORT))
+
+print("listening...")
+while True:
+    data, addr = sock.recvfrom(4096)
+    # interpret as float32 chunks
+    n = len(data) // 4
+    floats = struct.unpack(f"{n}f", data)
+    print(len(floats), floats[:8])
+```

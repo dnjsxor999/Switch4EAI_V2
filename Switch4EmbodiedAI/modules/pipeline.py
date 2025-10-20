@@ -40,7 +40,7 @@ class StreamToRobotPipeline:
         self.gvhmr = GVHMRRealtime(cfg.gvhmr)
         self.gmr = GMRRetarget(cfg.gmr, motion_fps=30)
         # Prepare SMPLX body model for per-frame conversion (GMR assets path)
-        # self.cached_betas = None
+        self.cached_betas = None
         smplx_models_path = GMR_ROOT / "assets" / "body_models"
         self.body_model = smplx.create(
             str(smplx_models_path), "smplx", gender="neutral", use_pca=False
@@ -60,27 +60,27 @@ class StreamToRobotPipeline:
         body_pose = smpl_params_global["body_pose"].view(1, -1).numpy()
         global_orient = smpl_params_global["global_orient"].view(1, -1).numpy()
         transl = smpl_params_global["transl"].view(1, -1).numpy()
-        # if self.cached_betas is None:
-        #     # Use first seen betas; pad to 16 as GMR expects
-        #     betas = smpl_params_global.get("betas", torch.zeros(10)).detach().cpu().numpy()
-        #     if betas.ndim == 2:
-        #         betas = betas[0]
-        #     if betas.shape[0] < 16:
-        #         betas = np.pad(betas, (0, 16 - betas.shape[0]))
-        #     self.cached_betas = betas
-        betas = np.pad(smpl_params_global['betas'][0], (0,6))
+        if self.cached_betas is None:
+            # Use first seen betas; pad to 16 as GMR expects
+            betas = smpl_params_global.get("betas", torch.zeros(10)).detach().cpu().numpy()
+            if betas.ndim == 2:
+                betas = betas[0]
+            if betas.shape[0] < 16:
+                betas = np.pad(betas, (0, 16 - betas.shape[0]))
+            self.cached_betas = betas
+        # betas = np.pad(smpl_params_global['betas'][0], (0,6))
 
         smplx_data = {
             "pose_body": body_pose.reshape(-1, 63),
-            # "betas": self.cached_betas,
-            "betas": betas,
+            "betas": self.cached_betas,
+            # "betas": betas,
             "root_orient": global_orient.reshape(-1, 3),
             "trans": transl.reshape(-1, 3),
             "mocap_frame_rate": torch.tensor(30),
         }
         smplx_output = self.body_model(
-            # betas=torch.tensor(self.cached_betas).float().view(1, -1),
-            betas=torch.tensor(betas).float().view(1, -1),
+            betas=torch.tensor(self.cached_betas).float().view(1, -1),
+            # betas=torch.tensor(betas).float().view(1, -1),
             global_orient=torch.tensor(smplx_data["root_orient"]).float(),
             body_pose=torch.tensor(smplx_data["pose_body"]).float(),
             transl=torch.tensor(smplx_data["trans"]).float(),

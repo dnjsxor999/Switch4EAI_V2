@@ -9,9 +9,15 @@ import signal
 # from Switch4EmbodiedAI.utils.helpers import signal_handler
 class SimpleStreamModuleConfig():
     capture_card_index: int = 0
+    save_path: str = None  # Path to save the stream module output
+    # allow video file input when hardware is unavailable
+    source: str = "camera"  # "camera" or "video"
+    video_path: str = None
+    loop_video: bool = True
+
+    # not used
     viz_stream: bool = True  # Whether to visualize the stream module output
     save_stream: bool = False  # Whether to save the istream module output
-    save_path: str = None  # Path to save the stream module output
 
 class SimpleStreamModule:
     '''
@@ -21,7 +27,10 @@ class SimpleStreamModule:
     def __init__(self, config):
         self.config = config
         self.capture_card_index = config.capture_card_index
-        self.stream = cv2.VideoCapture(self.capture_card_index)
+        if getattr(self.config, 'source', 'camera') == 'video' and getattr(self.config, 'video_path', None):
+            self.stream = cv2.VideoCapture(self.config.video_path)
+        else:
+            self.stream = cv2.VideoCapture(self.capture_card_index)
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = True
 
@@ -42,6 +51,15 @@ class SimpleStreamModule:
                 return
             # otherwise, read the next frame from the stream
             (self.grabbed, self.frame) = self.stream.read()
+            if not self.grabbed:
+                # If reading from a video file and loop is enabled, restart
+                if getattr(self.config, 'source', 'camera') == 'video' and getattr(self.config, 'loop_video', True):
+                    self.stream.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    (self.grabbed, self.frame) = self.stream.read()
+                else:
+                    # No frame available
+                    self.frame = None
+                    continue
             self.frame = self.process_frame(self.frame)
 
 

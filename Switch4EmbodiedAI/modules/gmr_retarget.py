@@ -25,9 +25,9 @@ class GMRConfig:
     video_path: str | None = None
     # Retargeting behavior flags
     rate_limit: bool = False
-    joint_vel_limit: bool = False
-    collision_avoid: bool = False
-    offset_ground: bool = False
+    joint_vel_limit: bool = True
+    collision_avoid: bool = True
+    offset_ground: bool = True
 
 
 class GMRRetarget:
