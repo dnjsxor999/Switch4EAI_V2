@@ -25,7 +25,7 @@ import smplx
 class PipelineConfig:
     use_stream: bool = True
     # UDP output
-    udp_enabled: bool = False
+    udp_enabled: bool = True
     udp_ip: str = "127.0.0.1"
     udp_send_port: int = 54010
     stream: SimpleStreamModuleConfig = SimpleStreamModuleConfig()
