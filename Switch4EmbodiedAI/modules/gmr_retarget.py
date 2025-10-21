@@ -19,14 +19,14 @@ from general_motion_retargeting import KinematicsModel, RobotMotionViewer # type
 class GMRConfig:
     robot: str = "unitree_g1"
     # Visualization flags
-    visualize: bool = True
+    visualize: bool = False
     step_full: bool = False
     record_video: bool = False
     video_path: str | None = None
     # Retargeting behavior flags
     rate_limit: bool = False
     joint_vel_limit: bool = True
-    collision_avoid: bool = True
+    collision_avoid: bool = False
     offset_ground: bool = True
 
 
@@ -86,6 +86,7 @@ class GMRRetarget:
         dof_pos = qpos[7:]
         motion_data = {
             "fps": self.motion_fps,
+            "qpos": np.asarray(qpos)[None, ...],
             "root_pos": np.asarray(root_pos)[None, ...],
             "root_rot": np.asarray(root_rot)[None, ...],
             "dof_pos": np.asarray(dof_pos)[None, ...],
@@ -103,6 +104,7 @@ class GMRRetarget:
 
         motion_data = {
             "fps": self.motion_fps,
+            "qpos": np.asarray(qpos)[None, ...],
             "root_pos": np.asarray(root_pos)[None, ...],
             "root_rot": np.asarray(root_rot)[None, ...],
             "dof_pos": np.asarray(dof_pos)[None, ...],

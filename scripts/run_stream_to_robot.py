@@ -53,6 +53,7 @@ def main():
             if client is not None:
                 if "qpos" in out:
                     arr = out["qpos"].astype("float32").flatten()
+                    client.send_message(arr, cfg.udp_ip, cfg.udp_send_port)
                 else:
                     md = out["motion_data"]
                     # # pack root_pos (3), root_rot (4), dof_pos (rest)
@@ -60,7 +61,7 @@ def main():
                     # root_rot = md["root_rot"].reshape(-1)
                     # dof_pos = md["dof_pos"].reshape(-1)
                     # arr = np.concatenate([root_pos, root_rot, dof_pos]).astype("float32")
-                client.send_message(md, cfg.udp_ip, cfg.udp_send_port)
+                    client.send_message(md['qpos'].squeeze(), cfg.udp_ip, cfg.udp_send_port)
     except KeyboardInterrupt:
         pass
     finally:
