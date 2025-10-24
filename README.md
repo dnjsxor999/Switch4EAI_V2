@@ -5,7 +5,7 @@ Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting)
 
 1) Clone with submodules
 ```
-git clone --recursive https://github.com/dnjsxor999/Switch4EAI_temp.git Switch4EAI
+git clone --recursive https://github.com/dnjsxor999/Switch4EAI_V2.git Switch4EAI
 cd Switch4EAI
 ```
 
