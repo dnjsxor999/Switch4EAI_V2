@@ -2,6 +2,7 @@ import socket
 import struct
 from collections import deque
 import numpy as np
+import json
 
 class UDPComm:
     def __init__(self, host, port, block = True):
@@ -55,6 +56,20 @@ class UDPComm:
         data = struct.pack(f'{len(floats)}f', *floats)
         self.sock.sendto(data, (dest_host, dest_port))
         # print(f"Message sent to {dest_host}:{dest_port}")
+
+    def send_json_message(self, obj, dest_host, dest_port):
+        """Send a JSON-serialized message (UTF-8) to the target host/port."""
+        try:
+            payload = json.dumps(obj, separators=(",", ":")).encode("utf-8")
+        except Exception:
+            # best effort: convert numpy arrays
+            def _default(o):
+                try:
+                    return o.tolist()
+                except Exception:
+                    return str(o)
+            payload = json.dumps(obj, default=_default, separators=(",", ":")).encode("utf-8")
+        self.sock.sendto(payload, (dest_host, dest_port))
 
     def close(self):
         """ Close the socket """

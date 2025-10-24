@@ -143,13 +143,42 @@ cfg.udp_send_port = 11111
 - On first run, ultralytics may download YOLO weights if not found at `third_party/GVHMR/inputs/checkpoints/yolo/yolov8x.pt`.
 - For non-static cameras, additional VO integration would be needed (not provided by default).
 
-## UDP send/receive example
+## UDP JSON payloads and receiver
 
-Sender is already built into the runners (set in `PipelineConfig` or edit defaults, see above.)
+The runners send JSON over UDP each step.
 
-Minimal UDP receiver to test:
+- Visualize=True (viewer on):
+  ```json
+  {
+    "type": "qpos",
+    "qpos": [ ... ],
+    "root_pos": [x, y, z],
+    "root_rot_xyzw": [x, y, z, w],
+    "root_vel": [vx, vy, vz] | null,
+    "root_ang_vel": [wx, wy, wz] | null,
+    "dof_pos": [ ... ],
+    "dof_vel": [ ... ] | null
+  }
+  ```
+
+- Visualize=False (headless):
+  ```json
+  {
+    "type": "motion_data",
+    "fps": 30,
+    "root_pos": [x, y, z],
+    "root_rot": [x, y, z, w],   
+    "dof_pos": [ ... ],
+    "local_body_pos": [[x,y,z], ...],   // present if step_full=True
+    "root_vel": [vx, vy, vz] | null,
+    "root_ang_vel": [wx, wy, wz] | null,
+    "dof_vel": [ ... ] | null
+  }
+  ```
+
+Minimal JSON UDP receiver:
 ```python
-import socket, struct
+import socket, json
 
 UDP_IP = "xxx.0.0.x"
 UDP_PORT = 11111
@@ -158,9 +187,7 @@ sock.bind((UDP_IP, UDP_PORT))
 
 print("listening...")
 while True:
-    data, addr = sock.recvfrom(4096)
-    # interpret as float32 chunks
-    n = len(data) // 4
-    floats = struct.unpack(f"{n}f", data)
-    print(len(floats), floats[:8])
+  data, addr = sock.recvfrom(65535)
+  msg = json.loads(data.decode("utf-8"))
+  print(msg.get("type"), msg.keys())
 ```

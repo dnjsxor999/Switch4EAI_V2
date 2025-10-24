@@ -52,16 +52,32 @@ def main():
                 continue
             if client is not None:
                 if "qpos" in out:
-                    arr = out["qpos"].astype("float32").flatten()
-                    client.send_message(arr, cfg.udp_ip, cfg.udp_send_port)
+                    # visual mode: send JSON with derived fields
+                    payload = {
+                        "type": "qpos",
+                        "qpos": out["qpos"].astype("float32").flatten().tolist(),
+                    }
+                    if "derived" in out:
+                        payload.update(out["derived"])  # already basic python lists
+                    client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
                 else:
                     md = out["motion_data"]
-                    # # pack root_pos (3), root_rot (4), dof_pos (rest)
-                    # root_pos = md["root_pos"].reshape(-1)
-                    # root_rot = md["root_rot"].reshape(-1)
-                    # dof_pos = md["dof_pos"].reshape(-1)
-                    # arr = np.concatenate([root_pos, root_rot, dof_pos]).astype("float32")
-                    client.send_message(md['qpos'].squeeze(), cfg.udp_ip, cfg.udp_send_port)
+                    payload = {
+                        "type": "motion_data",
+                        "fps": int(md.get("fps", 30)),
+                        "root_pos": md["root_pos"].reshape(-1).tolist(),
+                        "root_rot": md["root_rot"].reshape(-1).tolist(),
+                        "dof_pos": md["dof_pos"].reshape(-1).tolist(),
+                    }
+                    if md.get("local_body_pos", None) is not None:
+                        payload["local_body_pos"] = md["local_body_pos"].reshape(-1, 3).tolist()
+                    if md.get("root_vel", None) is not None:
+                        payload["root_vel"] = md["root_vel"].reshape(-1).tolist()
+                    if md.get("root_ang_vel", None) is not None:
+                        payload["root_ang_vel"] = md["root_ang_vel"].reshape(-1).tolist()
+                    if md.get("dof_vel", None) is not None:
+                        payload["dof_vel"] = md["dof_vel"].reshape(-1).tolist()
+                    client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
     except KeyboardInterrupt:
         pass
     finally:

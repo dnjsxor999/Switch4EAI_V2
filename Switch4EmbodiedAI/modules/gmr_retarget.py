@@ -19,7 +19,7 @@ from general_motion_retargeting import KinematicsModel, RobotMotionViewer # type
 class GMRConfig:
     robot: str = "unitree_g1"
     # Visualization flags
-    visualize: bool = False
+    visualize: bool = True
     step_full: bool = False
     record_video: bool = False
     video_path: str | None = None

@@ -28,7 +28,7 @@ from hmr4d.model.gvhmr.gvhmr_pl_demo import DemoPL # type: ignore
 
 @dataclass
 class GVHMRRealtimeConfig:
-    win_size: int = 30
+    win_size: int = 60
     static_cam: bool = True
     use_dpvo: bool = False
     f_mm: int | None = None
