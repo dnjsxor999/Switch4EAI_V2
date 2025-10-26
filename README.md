@@ -74,13 +74,13 @@ By Original, the pipeline processes frames at ~5Hz due to ~0.2s processing time 
 # With interpolation (default, 10Hz output)
 python scripts/run_stream_to_robot.py --camera 0
 
-# Without interpolation (~5Hz output, original behavior)
+# Without interpolation (~x Hz output, original behavior)
 python scripts/run_stream_to_robot.py --camera 0 --no-interpolation
 
-# Multiple interpolations for higher frequency
-python scripts/run_stream_to_robot.py --camera 0 --num-interp 1  # ~x hz
-python scripts/run_stream_to_robot.py --camera 0 --num-interp 2  # ~x*2 hz
-python scripts/run_stream_to_robot.py --camera 0 --num-interp 3  # ~x*3 hz
+# Multiple interpolations for higher frequency (5Hz as a original for example)
+python scripts/run_stream_to_robot.py --camera 0 --num-interp 1  # ~x*2 Hz
+python scripts/run_stream_to_robot.py --camera 0 --num-interp 2  # ~x*3 Hz
+python scripts/run_stream_to_robot.py --camera 0 --num-interp 3  # ~x*4 Hz
 
 # Debug timing mode (verify output frequency)
 python scripts/run_stream_to_robot.py --camera 0 --debug-timing
