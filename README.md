@@ -1,5 +1,7 @@
 # Switch4EAI_V2
-Unified wrapper around GVHMR (human motion recovery) and GMR (robot retargeting) with live streaming, multi-threaded execution, and UDP output.
+Switch4EmbodiedAI
+- [CoRL Open-Source Hardware in the Era of Robot Learning Workshop](https://easypapersniper.github.io/projects/Switch4EAI/Switch4EAI.html)
+- previous version of Switch4EmbodiedAI is [Switch4EAI_V1](https://github.com/EasyPaperSniper/Switch4EmbodiedAI)
 
 ## Installation
 
@@ -43,7 +45,7 @@ python scripts/online_gvhmr_test.py --video=/path/to/video.mp4 --win_size=30 -s
      --robot unitree_g1 --record_video --offset_ground --joint_vel_limit
 ```
 
-**Real-time** demo: Stream -> GVHMR -> GMR (single-thread):
+**Real-time** demo: Stream -> GVHMR -> GMR (single-thread + interpolating thread):
 ```
 python scripts/run_stream_to_robot.py                # default /dev/video0 (with hardware)
 python scripts/run_stream_to_robot.py --list-cams    # list available cameras (with hardware)
@@ -51,12 +53,42 @@ python scripts/run_stream_to_robot.py --camera=1     # select /dev/video1 (with 
 python scripts/run_stream_to_robot.py --video=/path/to/video.mp4  # for test without hardware (unstable) -> only recommend to check process of pipeline
 ```
 
-**Real-time** demo: Stream -> GVHMR -> GMR (multi-thread, lag=6 frames):
+**Real-time** demo: Stream -> GVHMR -> GMR (multi-thread + interpolating thread, lag=6 frames):
 ```
 python scripts/run_stream_to_robot_mt.py --list-cams
 python scripts/run_stream_to_robot_mt.py --camera=1
 python scripts/run_stream_to_robot_mt.py --video=/path/to/video.mp4
 ```
+
+### Interpolation
+
+By Original, the pipeline processes frames at ~5Hz due to ~0.2s processing time per frame. The **interpolation module** doubles the output frequency to ~10Hz by interpolating between consecutive outputs.
+
+**How it works**:
+- Actual outputs: ~5Hz (real processing results)
+- Interpolated outputs: ~5Hz (smooth interpolation between consecutive frames)
+- **Total: 10Hz output rate** with minimal overhead and preserved real-time performance
+
+**Usage**:
+```bash
+# With interpolation (default, 10Hz output)
+python scripts/run_stream_to_robot.py --camera 0
+
+# Without interpolation (~5Hz output, original behavior)
+python scripts/run_stream_to_robot.py --camera 0 --no-interpolation
+
+# Custom interpolation point (0.5 = midpoint, recommended)
+python scripts/run_stream_to_robot.py --camera 0 --interpolation-alpha 0.5
+```
+
+**Features**:
+- Doubles output frequency (5Hz → 10Hz)
+- Smooth interpolation: LERP for positions, SLERP for rotations
+- Real-time performance preserved (no accumulating lag)
+- One-time 0.2s initial lag (acceptable to test with game)
+
+**Documentation**:
+- Detailed guide: `INTERPOLATION_README.md`
 
 ### Real-time with Nintendo Switch (capture card)
 
