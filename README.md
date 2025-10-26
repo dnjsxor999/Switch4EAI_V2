@@ -77,7 +77,7 @@ python scripts/run_stream_to_robot.py --camera 0
 # Without interpolation (~x Hz output, original behavior)
 python scripts/run_stream_to_robot.py --camera 0 --no-interpolation
 
-# Multiple interpolations for higher frequency (5Hz as a original for example)
+# Multiple interpolations for higher frequency
 python scripts/run_stream_to_robot.py --camera 0 --num-interp 1  # ~x*2 Hz
 python scripts/run_stream_to_robot.py --camera 0 --num-interp 2  # ~x*3 Hz
 python scripts/run_stream_to_robot.py --camera 0 --num-interp 3  # ~x*4 Hz
@@ -87,7 +87,7 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 ```
 
 **Features**:
-- Flexible output frequency: 10Hz, 15Hz, 20Hz, or higher (via `--num-interp`)
+- Flexible output frequency: 10Hz, 15Hz, 20Hz, or higher (5Hz as a original for example, via `--num-interp`)
 - Smooth interpolation: LERP for positions, SLERP for rotations
 - Real-time performance preserved (no accumulating lag)
 - One-time 0.2s initial lag (acceptable to test with game)
