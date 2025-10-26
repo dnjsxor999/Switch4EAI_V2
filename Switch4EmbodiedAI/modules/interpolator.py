@@ -1,13 +1,21 @@
 """
-Interpolator module to double output frequency by interpolating between consecutive outputs.
+Interpolator module to increase output frequency by interpolating between consecutive outputs.
 
-Timeline:
+Timeline (num_interpolations=1, default):
 - t=0.0s: process frame_0 → f_prev (takes 0.2s)
 - t=0.2s: process frame_1 → f_curr (takes 0.2s), OUTPUT f_prev
 - t=0.3s: OUTPUT interpolated(f_prev, f_curr, alpha=0.5)
 - t=0.4s: process frame_2 → f_next, OUTPUT f_curr, f_prev=f_curr, f_curr=f_next
-- t=0.5s: OUTPUT interpolated(f_prev, f_curr, alpha=0.5)
-- ...continues
+- ...continues at 10Hz (5Hz actual + 5Hz interpolated)
+
+Timeline (num_interpolations=3):
+- t=0.0s: process frame_0 → f_prev (takes 0.2s)
+- t=0.2s: process frame_1 → f_curr (takes 0.2s), OUTPUT f_prev
+- t=0.25s: OUTPUT interpolated(f_prev, f_curr, alpha=0.25)
+- t=0.30s: OUTPUT interpolated(f_prev, f_curr, alpha=0.50)
+- t=0.35s: OUTPUT interpolated(f_prev, f_curr, alpha=0.75)
+- t=0.4s: process frame_2 → f_next, OUTPUT f_curr
+- ...continues at 20Hz (5Hz actual + 15Hz interpolated)
 """
 import time
 import numpy as np
@@ -16,19 +24,33 @@ from scipy.spatial.transform import Slerp
 
 
 class OutputInterpolator:
-    """Interpolates between consecutive pipeline outputs to double output frequency."""
+    """Interpolates between consecutive pipeline outputs to increase output frequency."""
     
-    def __init__(self, interpolation_alpha: float = 0.5):
+    def __init__(self, num_interpolations: int = 1):
         """
         Args:
-            interpolation_alpha: Interpolation factor (0.5 = midpoint between prev and curr)
+            num_interpolations: Number of interpolated frames between two actual frames.
+                - 1: doubles frequency (5Hz → 10Hz)
+                - 2: triples frequency (5Hz → 15Hz)
+                - 3: quadruples frequency (5Hz → 20Hz)
+                - etc.
         """
-        self.alpha = interpolation_alpha
+        if num_interpolations < 1:
+            raise ValueError(f"num_interpolations must be >= 1, got {num_interpolations}")
+        
+        self.num_interpolations = num_interpolations
+        # Calculate alpha values for each interpolation
+        # For num=1: [0.5]
+        # For num=2: [0.333, 0.667]
+        # For num=3: [0.25, 0.5, 0.75]
+        self.alphas = [(i + 1) / (num_interpolations + 1) for i in range(num_interpolations)]
+        
         self.f_prev = None
         self.f_curr = None
         self.prev_output_time = None
         self.curr_output_time = None
-        self.interpolated_sent = False  # Track if we've sent interpolated value
+        # Track which interpolations have been sent (index in self.alphas)
+        self.next_interp_index = 0
         
     def update(self, new_output: dict) -> None:
         """
@@ -44,34 +66,34 @@ class OutputInterpolator:
         self.f_curr = new_output
         self.prev_output_time = self.curr_output_time
         self.curr_output_time = time.time()
-        self.interpolated_sent = False  # Reset flag for new pair
+        # Reset interpolation counter for new pair
+        self.next_interp_index = 0
         
-    def should_send_interpolated(self, current_time: float) -> bool:
+    def should_send_interpolated(self, current_time: float) -> tuple[bool, int]:
         """
-        Check if we should send an interpolated output now.
+        Check if we should send the next interpolated output now.
         
-        Returns True if:
-        - We have both f_prev and f_curr
-        - We haven't sent interpolated yet for this pair
-        - Enough time has passed (alpha fraction of the interval from curr_output_time)
-        
-        The interpolated output should be sent at:
-        curr_output_time + interval * alpha
-        where interval = curr_output_time - prev_output_time
+        Returns:
+            (should_send, interp_index): 
+                - should_send: True if we should send an interpolated output
+                - interp_index: Index of the interpolation to send (for self.alphas)
         """
         if self.f_prev is None or self.f_curr is None:
-            return False
-        if self.interpolated_sent:
-            return False
+            return False, -1
         if self.prev_output_time is None or self.curr_output_time is None:
-            return False
+            return False, -1
+        if self.next_interp_index >= self.num_interpolations:
+            # All interpolations for this pair have been sent
+            return False, -1
             
-        # Calculate when to send interpolated output
-        # It should be sent at alpha fraction of the interval AFTER curr_output_time
+        # Calculate when to send the next interpolated output
         interval = self.curr_output_time - self.prev_output_time
-        send_time = self.curr_output_time + interval * self.alpha
+        alpha = self.alphas[self.next_interp_index]
+        send_time = self.curr_output_time + interval * alpha
         
-        return current_time >= send_time
+        if current_time >= send_time:
+            return True, self.next_interp_index
+        return False, -1
     
     def get_next_output(self) -> tuple[dict | None, str]:
         """
@@ -90,9 +112,11 @@ class OutputInterpolator:
             return None, "none"
             
         # Check if we should send interpolated output
-        if self.should_send_interpolated(current_time):
-            interpolated = self._interpolate()
-            self.interpolated_sent = True
+        should_send, interp_index = self.should_send_interpolated(current_time)
+        if should_send:
+            alpha = self.alphas[interp_index]
+            interpolated = self._interpolate(alpha)
+            self.next_interp_index += 1  # Mark this interpolation as sent
             return interpolated, "interpolated"
         
         # Otherwise, return None (caller should wait or do other work)
@@ -102,28 +126,31 @@ class OutputInterpolator:
         """Get the actual (non-interpolated) output to send (f_prev)."""
         return self.f_prev
     
-    def _interpolate(self) -> dict:
+    def _interpolate(self, alpha: float) -> dict:
         """
-        Interpolate between f_prev and f_curr.
+        Interpolate between f_prev and f_curr with given alpha.
+        
+        Args:
+            alpha: Interpolation factor (0.0 = f_prev, 1.0 = f_curr)
         
         Handles both visualize mode (qpos) and headless mode (motion_data).
         """
         if "qpos" in self.f_prev:
             # Visualize mode: interpolate qpos and derived fields
-            return self._interpolate_qpos_mode()
+            return self._interpolate_qpos_mode(alpha)
         else:
             # Headless mode: interpolate motion_data
-            return self._interpolate_motion_data_mode()
+            return self._interpolate_motion_data_mode(alpha)
     
-    def _interpolate_qpos_mode(self) -> dict:
+    def _interpolate_qpos_mode(self, alpha: float) -> dict:
         """Interpolate for visualize mode output."""
         qpos_prev = self.f_prev["qpos"]
         qpos_curr = self.f_curr["qpos"]
         
         # qpos = [root_pos(3), root_rot_wxyz(4), dof_pos(N)]
-        root_pos_interp = self._lerp(qpos_prev[:3], qpos_curr[:3])
-        root_rot_interp = self._slerp_wxyz(qpos_prev[3:7], qpos_curr[3:7])
-        dof_pos_interp = self._lerp(qpos_prev[7:], qpos_curr[7:])
+        root_pos_interp = self._lerp(qpos_prev[:3], qpos_curr[:3], alpha)
+        root_rot_interp = self._slerp_wxyz(qpos_prev[3:7], qpos_curr[3:7], alpha)
+        dof_pos_interp = self._lerp(qpos_prev[7:], qpos_curr[7:], alpha)
         
         qpos_interp = np.concatenate([root_pos_interp, root_rot_interp, dof_pos_interp])
         
@@ -145,7 +172,8 @@ class OutputInterpolator:
         if derived_prev.get("root_vel") is not None and derived_curr.get("root_vel") is not None:
             derived_interp["root_vel"] = self._lerp(
                 np.array(derived_prev["root_vel"]), 
-                np.array(derived_curr["root_vel"])
+                np.array(derived_curr["root_vel"]),
+                alpha
             ).tolist()
         else:
             derived_interp["root_vel"] = None
@@ -153,7 +181,8 @@ class OutputInterpolator:
         if derived_prev.get("root_ang_vel") is not None and derived_curr.get("root_ang_vel") is not None:
             derived_interp["root_ang_vel"] = self._lerp(
                 np.array(derived_prev["root_ang_vel"]),
-                np.array(derived_curr["root_ang_vel"])
+                np.array(derived_curr["root_ang_vel"]),
+                alpha
             ).tolist()
         else:
             derived_interp["root_ang_vel"] = None
@@ -161,7 +190,8 @@ class OutputInterpolator:
         if derived_prev.get("dof_vel") is not None and derived_curr.get("dof_vel") is not None:
             derived_interp["dof_vel"] = self._lerp(
                 np.array(derived_prev["dof_vel"]),
-                np.array(derived_curr["dof_vel"])
+                np.array(derived_curr["dof_vel"]),
+                alpha
             ).tolist()
         else:
             derived_interp["dof_vel"] = None
@@ -171,7 +201,7 @@ class OutputInterpolator:
             "derived": derived_interp
         }
     
-    def _interpolate_motion_data_mode(self) -> dict:
+    def _interpolate_motion_data_mode(self, alpha: float) -> dict:
         """Interpolate for headless mode output."""
         md_prev = self.f_prev["motion_data"]
         md_curr = self.f_curr["motion_data"]
@@ -179,18 +209,21 @@ class OutputInterpolator:
         # Interpolate core fields
         root_pos_interp = self._lerp(
             md_prev["root_pos"].reshape(-1),
-            md_curr["root_pos"].reshape(-1)
+            md_curr["root_pos"].reshape(-1),
+            alpha
         )
         
         # root_rot is in xyzw format
         root_rot_interp = self._slerp_xyzw(
             md_prev["root_rot"].reshape(-1),
-            md_curr["root_rot"].reshape(-1)
+            md_curr["root_rot"].reshape(-1),
+            alpha
         )
         
         dof_pos_interp = self._lerp(
             md_prev["dof_pos"].reshape(-1),
-            md_curr["dof_pos"].reshape(-1)
+            md_curr["dof_pos"].reshape(-1),
+            alpha
         )
         
         motion_data_interp = {
@@ -204,14 +237,16 @@ class OutputInterpolator:
         if md_prev.get("local_body_pos") is not None and md_curr.get("local_body_pos") is not None:
             local_body_pos_interp = self._lerp(
                 md_prev["local_body_pos"].reshape(-1, 3),
-                md_curr["local_body_pos"].reshape(-1, 3)
+                md_curr["local_body_pos"].reshape(-1, 3),
+                alpha
             )
             motion_data_interp["local_body_pos"] = local_body_pos_interp[None, ...]
         
         if md_prev.get("root_vel") is not None and md_curr.get("root_vel") is not None:
             root_vel_interp = self._lerp(
                 md_prev["root_vel"].reshape(-1),
-                md_curr["root_vel"].reshape(-1)
+                md_curr["root_vel"].reshape(-1),
+                alpha
             )
             motion_data_interp["root_vel"] = root_vel_interp[None, ...]
         else:
@@ -220,7 +255,8 @@ class OutputInterpolator:
         if md_prev.get("root_ang_vel") is not None and md_curr.get("root_ang_vel") is not None:
             root_ang_vel_interp = self._lerp(
                 md_prev["root_ang_vel"].reshape(-1),
-                md_curr["root_ang_vel"].reshape(-1)
+                md_curr["root_ang_vel"].reshape(-1),
+                alpha
             )
             motion_data_interp["root_ang_vel"] = root_ang_vel_interp[None, ...]
         else:
@@ -229,7 +265,8 @@ class OutputInterpolator:
         if md_prev.get("dof_vel") is not None and md_curr.get("dof_vel") is not None:
             dof_vel_interp = self._lerp(
                 md_prev["dof_vel"].reshape(-1),
-                md_curr["dof_vel"].reshape(-1)
+                md_curr["dof_vel"].reshape(-1),
+                alpha
             )
             motion_data_interp["dof_vel"] = dof_vel_interp[None, ...]
         else:
@@ -237,11 +274,11 @@ class OutputInterpolator:
         
         return {"motion_data": motion_data_interp}
     
-    def _lerp(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def _lerp(self, a: np.ndarray, b: np.ndarray, alpha: float) -> np.ndarray:
         """Linear interpolation."""
-        return (1 - self.alpha) * a + self.alpha * b
+        return (1 - alpha) * a + alpha * b
     
-    def _slerp_wxyz(self, q1_wxyz: np.ndarray, q2_wxyz: np.ndarray) -> np.ndarray:
+    def _slerp_wxyz(self, q1_wxyz: np.ndarray, q2_wxyz: np.ndarray, alpha: float) -> np.ndarray:
         """Spherical linear interpolation for quaternions in wxyz format."""
         # scipy Rotation expects scalar-last (xyzw)
         q1_xyzw = np.array([q1_wxyz[1], q1_wxyz[2], q1_wxyz[3], q1_wxyz[0]])
@@ -251,7 +288,7 @@ class OutputInterpolator:
         r2 = R.from_quat(q2_xyzw)
         
         slerp = Slerp([0, 1], R.concatenate([r1, r2]))
-        r_interp = slerp([self.alpha])[0]
+        r_interp = slerp([alpha])[0]
         
         quat_interp_xyzw = r_interp.as_quat()
         # Convert back to wxyz
@@ -260,13 +297,13 @@ class OutputInterpolator:
         ])
         return quat_interp_wxyz
     
-    def _slerp_xyzw(self, q1_xyzw: np.ndarray, q2_xyzw: np.ndarray) -> np.ndarray:
+    def _slerp_xyzw(self, q1_xyzw: np.ndarray, q2_xyzw: np.ndarray, alpha: float) -> np.ndarray:
         """Spherical linear interpolation for quaternions in xyzw format."""
         r1 = R.from_quat(q1_xyzw)
         r2 = R.from_quat(q2_xyzw)
         
         slerp = Slerp([0, 1], R.concatenate([r1, r2]))
-        r_interp = slerp([self.alpha])[0]
+        r_interp = slerp([alpha])[0]
         
         return r_interp.as_quat()
     

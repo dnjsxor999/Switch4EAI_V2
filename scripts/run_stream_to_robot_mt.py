@@ -60,10 +60,33 @@ def probe_cameras(max_index: int = 10):
     return available
 
 
+# Global timing debug state
+_debug_timing_state = {
+    "enabled": False,
+    "last_send_time": None,
+    "send_count": 0,
+    "target_interval_ms": 100,  # Will be updated based on num_interpolations
+}
+
+
 def send_output_via_udp(out: dict, client: UDPComm, cfg: PipelineConfig, is_interpolated: bool = False):
     """Helper function to send output via UDP."""
     if client is None:
         return
+    
+    # Debug timing measurement
+    current_time = time.time()
+    if _debug_timing_state["enabled"]:
+        if _debug_timing_state["last_send_time"] is not None:
+            interval = current_time - _debug_timing_state["last_send_time"]
+            interval_ms = interval * 1000
+            output_type = "INTERP" if is_interpolated else "ACTUAL"
+            _debug_timing_state["send_count"] += 1
+            target = _debug_timing_state["target_interval_ms"]
+            print(f"[DEBUG #{_debug_timing_state['send_count']:04d}] {output_type:6s} | Δt = {interval_ms:6.1f}ms | Target: ~{target:.0f}ms")
+        else:
+            print(f"[DEBUG #0001] {'INTERP' if is_interpolated else 'ACTUAL':6s} | First output (no interval)")
+        _debug_timing_state["last_send_time"] = current_time
     
     if "qpos" in out:
         # visual mode: send JSON with derived fields
@@ -112,13 +135,32 @@ def main():
     parser.add_argument("--video", type=str, default=None, help="Path to a video file to stream instead of camera")
     parser.add_argument("--list-cams", action="store_true", help="List available camera indices and exit")
     parser.add_argument("--no-interpolation", action="store_true", help="Disable output interpolation (run at native frequency)")
-    parser.add_argument("--interpolation-alpha", type=float, default=0.5, help="Interpolation alpha (0.5 = midpoint)")
+    parser.add_argument("--num-interp", type=int, default=1, help="Number of interpolated frames (1=~10Hz, 2=~15Hz, 3=~20Hz, etc.)")
+    parser.add_argument("--debug-timing", action="store_true", help="Print timing info for each UDP output (debug mode)")
     args = parser.parse_args()
 
     if args.list_cams:
         cams = probe_cameras(10)
         print(f"Available cameras: {cams if cams else 'None detected'}")
         return
+
+    # Enable debug timing if requested
+    if args.debug_timing:
+        _debug_timing_state["enabled"] = True
+        if args.no_interpolation:
+            target_interval_ms = 200  # 5Hz
+        else:
+            target_interval_ms = 1000 / (5 * (args.num_interp + 1))
+        _debug_timing_state["target_interval_ms"] = target_interval_ms
+        print("=" * 70)
+        print("DEBUG TIMING MODE ENABLED")
+        print("=" * 70)
+        print("Legend:")
+        print("  ACTUAL = Real processing result from pipeline")
+        print("  INTERP = Interpolated output between two actuals")
+        print("  Δt     = Time interval since last output")
+        print(f"  Target = Expected interval (~{target_interval_ms:.0f}ms)")
+        print("=" * 70)
 
     app_cfg = PipelineConfig()
     app_cfg.use_stream = False
@@ -152,7 +194,7 @@ def main():
 
     # Initialize interpolator
     use_interpolation = not args.no_interpolation
-    interpolator = OutputInterpolator(interpolation_alpha=args.interpolation_alpha) if use_interpolation else None
+    interpolator = OutputInterpolator(num_interpolations=args.num_interp) if use_interpolation else None
     
     # Start background thread for interpolated outputs
     stop_event = threading.Event()
@@ -164,7 +206,7 @@ def main():
             daemon=True
         )
         sender_thread.start()
-        print(f"Interpolation enabled (alpha={args.interpolation_alpha}): Output frequency doubled")
+        print(f"Interpolation enabled (num_interp={args.num_interp})")
     else:
         print("Running at native frequency (no interpolation)")
 
