@@ -60,6 +60,9 @@ def send_output_via_udp(out: dict, client: UDPComm, cfg: PipelineConfig, is_inte
             "interpolated": is_interpolated,
         }
         if "derived" in out:
+            # Lock the root x,y to 0
+            out["derived"]["root_pos"][0] = 0
+            out["derived"]["root_pos"][1] = 0
             payload.update(out["derived"])  # already basic python lists
         client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
     else:
