@@ -124,7 +124,36 @@ class GMRRetarget:
                 show_human_body_name=False,
                 rate_limit=self.cfg.rate_limit,
             )
+
+            motion_data = {
+                "fps": self.motion_fps,
+                "qpos": np.asarray(qpos)[None, ...],
+                "root_pos": np.asarray(qpos[:3])[None, ...],
+                "root_rot": np.asarray(qpos[3:7][[1, 2, 3, 0]])[None, ...], # xyzw
+                "dof_pos": np.asarray(qpos[7:])[None, ...],
+            }
+            return motion_data
         return qpos
+
+    def get_default_pose(self) -> dict:
+        """
+        Get default robot pose with zero joint positions.
+        
+        Returns:
+            motion_data dict with default pose
+        """
+        # Default standing pose with zero joint positions
+        root_pos = np.zeros(3)
+        root_rot = np.array([0.0, 0.0, 0.0, 1.0])  # identity quaternion (xyzw)
+        dof_pos = np.zeros(23)  # G1 has 23 DOF
+        
+        motion_data = {
+            "fps": self.motion_fps,
+            "root_pos": root_pos[None, ...],
+            "root_rot": root_rot[None, ...],
+            "dof_pos": dof_pos[None, ...],
+        }
+        return {"motion_data": motion_data}
 
     def close(self):
         if self.viewer is not None:

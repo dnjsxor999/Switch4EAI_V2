@@ -11,7 +11,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from Switch4EmbodiedAI.modules.pipeline import StreamToRobotPipeline, PipelineConfig
 from Switch4EmbodiedAI.modules.UDPcomm_module import UDPComm
-from Switch4EmbodiedAI.modules.interpolator import OutputInterpolator
+from Switch4EmbodiedAI.utils.interpolator import OutputInterpolator
+from Switch4EmbodiedAI.utils import get_user_timing_inputs
 
 
 def probe_cameras(max_index: int = 10):
@@ -86,6 +87,23 @@ def send_output_via_udp(out: dict, client: UDPComm, cfg: PipelineConfig, is_inte
         client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
 
 
+def send_default_via_udp(default_pose: dict, client: UDPComm, cfg: PipelineConfig):
+    """Helper function to send default pose via UDP."""
+    if client is None:
+        return
+    
+    md = default_pose["motion_data"]
+    payload = {
+        "type": "motion_data",
+        "fps": int(md.get("fps", 30)),
+        "root_pos": md["root_pos"].reshape(-1).tolist(),
+        "root_rot": md["root_rot"].reshape(-1).tolist(),
+        "dof_pos": md["dof_pos"].reshape(-1).tolist(),
+        "interpolated": False,
+    }
+    client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
+
+
 def interpolation_sender_thread(interpolator: OutputInterpolator, client: UDPComm, cfg: PipelineConfig, stop_event: threading.Event):
     """Background thread that sends interpolated outputs at the right time."""
     while not stop_event.is_set():
@@ -142,6 +160,28 @@ def main():
     if cfg.udp_enabled:
         client = UDPComm(cfg.udp_ip, cfg.udp_send_port)
     
+    # Get user timing inputs before starting pipeline
+    wait_time, song_duration = get_user_timing_inputs()
+    
+    # Get default pose from GMR
+    default_pose = pipeline.gmr.get_default_pose()
+    
+    # Send default pose during wait time
+    if client is not None and wait_time > 0:
+        print(f"\nSending default pose for {wait_time:.1f} seconds...")
+        wait_start = time.time()
+        send_interval = 0.1  # Send at 10Hz
+        next_send = wait_start
+        
+        while time.time() - wait_start < wait_time:
+            current = time.time()
+            if current >= next_send:
+                send_default_via_udp(default_pose, client, cfg)
+                next_send += send_interval
+            time.sleep(0.01)
+        
+        print("Wait time complete. Starting motion capture...")
+    
     use_interpolation = not args.no_interpolation
     
     # Start background thread for interpolated outputs
@@ -164,7 +204,8 @@ def main():
     pipeline.start()
     
     try:
-        while True:
+        capture_start = time.time()
+        while time.time() - capture_start < song_duration:
             out = pipeline.run_once()
             if out is None:
                 continue
@@ -181,6 +222,8 @@ def main():
             else:
                 # Direct output without interpolation
                 send_output_via_udp(out, client, cfg, is_interpolated=False)
+        
+        print(f"\nMotion capture complete. Captured for {song_duration:.1f} seconds.")
                 
     except KeyboardInterrupt:
         pass

@@ -50,7 +50,7 @@ class StreamToRobotPipeline:
         self._prev = {
             "t": None,
             "root_pos": None,
-            "root_rot_xyzw": None,
+            "root_rot": None,
             "dof_pos": None,
         }
 
@@ -109,41 +109,51 @@ class StreamToRobotPipeline:
             position = per_frame[joint_name][0] @ rotation_matrix.T
             per_frame[joint_name] = (position, orientation)
 
-        # Single-retarget branch per mode; compute finite-difference velocities from returned values
+        # # Single-retarget branch per mode; compute finite-difference velocities from returned values
+        # if self.cfg.gmr.visualize:
+        #     # viewer mode → one retarget via vis_step
+        #     qpos = self.gmr.vis_step(per_frame)
+        #     now = time.time()
+        #     root_pos = qpos[:3]
+        #     root_rot_wxyz = qpos[3:7]
+        #     dof_pos = qpos[7:]
+        #     root_rot_xyzw = np.array([root_rot_wxyz[1], root_rot_wxyz[2], root_rot_wxyz[3], root_rot_wxyz[0]])
+
+        #     root_vel, root_ang_vel, dof_vel = self._compute_fd(now, root_pos, root_rot_xyzw, dof_pos)
+        #     return {
+        #         "qpos": qpos,
+        #         "derived": {
+        #             "root_pos": root_pos.tolist(),
+        #             "root_rot_xyzw": root_rot_xyzw.tolist(),
+        #             "root_vel": None if root_vel is None else root_vel.tolist(),
+        #             "root_ang_vel": None if root_ang_vel is None else root_ang_vel.tolist(),
+        #             "dof_pos": dof_pos.tolist(),
+        #             "dof_vel": None if dof_vel is None else dof_vel.tolist(),
+        #         },
+        #     }
+        # else:
         if self.cfg.gmr.visualize:
             # viewer mode → one retarget via vis_step
-            qpos = self.gmr.vis_step(per_frame)
-            now = time.time()
-            root_pos = qpos[:3]
-            root_rot_wxyz = qpos[3:7]
-            dof_pos = qpos[7:]
-            root_rot_xyzw = np.array([root_rot_wxyz[1], root_rot_wxyz[2], root_rot_wxyz[3], root_rot_wxyz[0]])
-
-            root_vel, root_ang_vel, dof_vel = self._compute_fd(now, root_pos, root_rot_xyzw, dof_pos)
-            return {
-                "qpos": qpos,
-                "derived": {
-                    "root_pos": root_pos.tolist(),
-                    "root_rot_xyzw": root_rot_xyzw.tolist(),
-                    "root_vel": None if root_vel is None else root_vel.tolist(),
-                    "root_ang_vel": None if root_ang_vel is None else root_ang_vel.tolist(),
-                    "dof_pos": dof_pos.tolist(),
-                    "dof_vel": None if dof_vel is None else dof_vel.tolist(),
-                },
-            }
+            motion_data = self.gmr.vis_step(per_frame)
         else:
             # headless mode → one retarget via step()/step_full(); compute velocities from motion_data
             motion_data = self.gmr.step(per_frame) if not self.cfg.gmr.step_full else self.gmr.step_full(per_frame)
-            now = time.time()
-            root_pos = motion_data["root_pos"].reshape(-1)
-            root_rot_xyzw = motion_data["root_rot"].reshape(-1)
-            dof_pos = motion_data["dof_pos"].reshape(-1)
-            
-            root_vel, root_ang_vel, dof_vel = self._compute_fd(now, root_pos, root_rot_xyzw, dof_pos)
-            motion_data["root_vel"] = None if root_vel is None else root_vel[None, ...]
-            motion_data["root_ang_vel"] = None if root_ang_vel is None else root_ang_vel[None, ...]
-            motion_data["dof_vel"] = None if dof_vel is None else dof_vel[None, ...]
-            return {"motion_data": motion_data}
+        
+        
+        now = time.time()
+        root_pos = motion_data["root_pos"].reshape(-1)
+        root_rot = motion_data["root_rot"].reshape(-1)
+        dof_pos = motion_data["dof_pos"].reshape(-1)
+        
+        ## **Match with Offline format, make root pos x,y to 0 and root vel meaningless
+        root_pos[0] = 0
+        root_pos[1] = 0
+        
+        root_vel, root_ang_vel, dof_vel = self._compute_fd(now, root_pos, root_rot, dof_pos)
+        motion_data["root_vel"] = None if root_vel is None else root_vel[None, ...]
+        motion_data["root_ang_vel"] = None if root_ang_vel is None else root_ang_vel[None, ...]
+        motion_data["dof_vel"] = None if dof_vel is None else dof_vel[None, ...]
+        return {"motion_data": motion_data}
 
     def run_once(self) -> dict | None:
         if self.stream is None:
@@ -160,7 +170,7 @@ class StreamToRobotPipeline:
         self.stream.close()
         self.gmr.close()
 
-    def _compute_fd(self, now: float, root_pos: np.ndarray, root_rot_xyzw: np.ndarray, dof_pos: np.ndarray):
+    def _compute_fd(self, now: float, root_pos: np.ndarray, root_rot: np.ndarray, dof_pos: np.ndarray):
         root_vel = None
         root_ang_vel = None
         dof_vel = None
@@ -169,14 +179,14 @@ class StreamToRobotPipeline:
             root_vel = (root_pos - self._prev["root_pos"]) / dt
             dof_vel = (dof_pos - self._prev["dof_pos"]) / dt
             # angular velocity from quaternion difference
-            wxyz_prev = np.array([self._prev["root_rot_xyzw"][3], *self._prev["root_rot_xyzw"][:3]])
-            wxyz_curr = np.array([root_rot_xyzw[3], *root_rot_xyzw[:3]])
+            wxyz_prev = np.array([self._prev["root_rot"][3], *self._prev["root_rot"][:3]])
+            wxyz_curr = np.array([root_rot[3], *root_rot[:3]])
             qd = R.from_quat(wxyz_curr) * R.from_quat(wxyz_prev).inv()
             root_ang_vel = qd.as_rotvec() / dt
         self._prev = {
             "t": now,
             "root_pos": root_pos.copy(),
-            "root_rot_xyzw": root_rot_xyzw.copy(),
+            "root_rot": root_rot.copy(),
             "dof_pos": dof_pos.copy(),
         }
         return root_vel, root_ang_vel, dof_vel

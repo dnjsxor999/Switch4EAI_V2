@@ -97,25 +97,99 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 
 ### Real-time with Nintendo Switch (capture card)
 
-1) Hardware hookup
+This guide explains how to capture motion from games like Just Dance using a Nintendo Switch and HDMI capture card.
+
+#### 1) Hardware Setup
+
+Connect your hardware in the following order:
 - Connect Nintendo Switch HDMI OUT → capture card HDMI IN
 - Connect capture card USB to your Ubuntu machine
 - Verify device appears (e.g., `/dev/video0`, `/dev/video1`)
 
-2) Discover the correct camera index
-```
-python scripts/run_stream_to_robot.py --list-cams
-# Example: Available cameras: [1]
+Check permissions:
+```bash
+ls -l /dev/video*
+# Ensure your user is in the 'video' group
+groups
 ```
 
-3) Run the pipeline
+#### 2) Discover Camera Index
+
+List available cameras:
+```bash
+python scripts/run_stream_to_robot.py --list-cams
+# Example output: Available cameras: [1]
 ```
+
+#### 3) Running the Pipeline
+
+The pipeline requires timing information for synchronized capture:
+
+```bash
 python scripts/run_stream_to_robot.py --camera=1
 ```
 
-4) Troubleshooting
+When you run the script, you will be prompted:
+```
+You should Enter wait time(s) and song duration(s) for the current song:
+Enter Wait Time: [enter value in seconds]
+Enter Song Duration: [enter value in seconds]
+Press enter again, just as you press the "a" button on the Switch Controller...
+```
+
+**Timing Parameters:**
+- **Wait Time**: Delay before motion capture starts. During this time, the robot receives default G1 pose. This allows you to ready your Switch and Switch to show actual dance motion. This for preventing the motion retargeting from no human scene.
+- **Song Duration**: How long to capture motion (typically the song length in seconds).
+
+**Workflow Example** (Just Dance):
+1. Start the script: `python scripts/run_stream_to_robot.py --camera=1`
+2. Enter wait time (e.g., `10` seconds for menu navigation)
+3. Enter song duration (e.g., `180` for a 3-minute song)
+4. Navigate to song selection on Switch (Make the Switch scene right before selecting coach)
+5. Press 'Enter' in terminal and 'A' button **SAME TIME** in Switch Controller(JoyCon)
+6. Script sends default pose for 10 seconds (while song intro plays, before showing your coach body)
+7. Motion capture starts automatically after wait time
+8. Captures motion for 180 seconds
+9. Automatically stops after song duration
+
+#### 4) Advanced Options
+
+**Debug Timing:**
+```bash
+# Verify output intervals
+python scripts/run_stream_to_robot.py --camera=1 --debug-timing
+```
+
+This will print timing information for each UDP output:
+```
+[DEBUG #0001] ACTUAL | First output (no interval)
+[DEBUG #0002] ACTUAL | Δt =  200.2ms | Target: ~67ms
+[DEBUG #0003] INTERP | Δt =   66.8ms | Target: ~67ms
+[DEBUG #0004] INTERP | Δt =   67.1ms | Target: ~67ms
+...
+```
+
+#### 5) Troubleshooting
+
+**Camera Issues:**
 - If OpenCV fails to open the device, try another index or ensure no other app is using it
-- Check permissions (your user in `video` group), and that `/dev/videoN` exists
+- Check permissions: ensure your user is in the `video` group
+- Verify `/dev/videoN` exists and is accessible
+
+**Timing Issues:**
+- If motion starts too early/late, adjust the Wait Time parameter
+- For songs with long intros, increase Wait Time accordingly
+- Song Duration should match the actual playable portion of the song
+
+**Performance Issues:**
+- If output frequency is inconsistent, check CPU load
+- Try reducing `--num-interp` value if system is overloaded
+- Use `--debug-timing` to verify actual output intervals
+
+**UDP Connection:**
+- Verify UDP receiver is running on the configured IP and port
+- Check firewall settings if receiver is on a different machine
+- Default: `127.0.0.1:54010` (configured in `Switch4EmbodiedAI/modules/pipeline.py`)
 
 ### Configuration reference
 - `SimpleStreamModuleConfig` in `Switch4EAI/modules/stream_modules.py`
@@ -136,18 +210,6 @@ python scripts/run_stream_to_robot.py --camera=1
   - record_video (bool), video_path (str|None)
   - rate_limit, joint_vel_limit, collision_avoid, offset_ground (bool)
 
-### Outputs per step
-- If `cfg.gmr.visualize = True` (viewer on):
-  - Pipeline returns `{ "qpos": np.ndarray }`
-  - qpos layout: `[root_pos(3), root_rot(4, wxyz), dof_pos(...)]`
-- If `cfg.gmr.visualize = False` (headless):
-  - Pipeline returns `{ "motion_data": dict }`
-  - motion_data contains:
-    - `fps`: int
-    - `root_pos`: shape (1, 3)
-    - `root_rot`: shape (1, 4) as xyzw
-    - `dof_pos`: shape (1, dof_dim)
-    - if `step_full=True`: `local_body_pos`: shape (1, num_bodies, 3)
 
 To enable UDP output, edit `Switich4EmbodiedAI/modules/pipeline.py` defaults or set in code:
 ```python
@@ -184,21 +246,6 @@ cfg.udp_send_port = 11111
 
 The runners send JSON over UDP each step.
 
-- Visualize=True (viewer on):
-  ```json
-  {
-    "type": "qpos",
-    "qpos": [ ... ],
-    "root_pos": [x, y, z],
-    "root_rot_xyzw": [x, y, z, w],
-    "root_vel": [vx, vy, vz] | null,
-    "root_ang_vel": [wx, wy, wz] | null,
-    "dof_pos": [ ... ],
-    "dof_vel": [ ... ] | null
-  }
-  ```
-
-- Visualize=False (headless):
   ```json
   {
     "type": "motion_data",
