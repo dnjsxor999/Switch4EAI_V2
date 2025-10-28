@@ -1,6 +1,6 @@
 # Measuring Just Dance Score(JDS) with TWIST controller
 This readme walks through the flow of testing Switch4EAI using [TWIST](https://yanjieze.com/TWIST/) as a low-level controller.
-
+It was tested on Ubuntu 2020.4 LTS with RTX 4090 GPU.
 
 ## TWIST installation
 **1**. Navigate to the forked TWIST repo
@@ -16,6 +16,7 @@ git checkout switch4eai
 **3**. Install packages: 
 (Note 1) Below instruction assumes you are using same conda environemt as the `switch4eai`.
 (Note 2) You can also create a separate conda environment following the installation process of the [forked TWIST repo](https://github.com/whitealex95/TWIST/tree/switch4eai)
+
 Install the below dependencies:
 ```bash
 cd rsl_rl && pip install -e . && cd ..
