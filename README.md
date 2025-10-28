@@ -145,10 +145,8 @@ Press enter again, just as you press the "a" button on the Switch Controller...
 8. Captures motion for 180 seconds
 9. Automatically stops after song duration
 
-#### 4) Advanced Options
-
 <details>
-<summary>Show / hide</summary>
+<summary>4) Advanced Options</summary>
 
 **Debug Timing:**
 ```bash
@@ -167,10 +165,9 @@ This will print timing information for each UDP output:
 
 </details>
 
-#### 5) Troubleshooting
 
 <details>
-<summary>Show / hide</summary>
+<summary>5) Troubleshooting</summary>
 
 **Camera Issues:**
 - If OpenCV fails to open the device, try another index or ensure no other app is using it
