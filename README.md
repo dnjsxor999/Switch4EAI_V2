@@ -30,7 +30,7 @@ Notes:
 - GVHMR expects checkpoints (YOLO, model ckpt) under `third_party/GVHMR/inputs/checkpoints/...` per its [README](https://github.com/zju3dv/GVHMR/blob/main/docs/INSTALL.md)
 
 
-## Usage
+## Pipeline
 
 **Online** GVHMR demo from video (single-thread):
 ```
@@ -53,14 +53,7 @@ python scripts/run_stream_to_robot.py --camera=1     # select /dev/video1 (with 
 python scripts/run_stream_to_robot.py --video=/path/to/video.mp4  # for test without hardware (unstable) -> only recommend to check process of pipeline
 ```
 
-**Real-time** demo: Stream -> GVHMR -> GMR (multi-thread + interpolating thread, lag=6 frames):
-```
-python scripts/run_stream_to_robot_mt.py --list-cams
-python scripts/run_stream_to_robot_mt.py --camera=1
-python scripts/run_stream_to_robot_mt.py --video=/path/to/video.mp4
-```
-
-### Interpolation
+### Interpolated Pipeline
 
 By Original, the pipeline processes frames at ~5Hz due to ~0.2s processing time per frame. The **interpolation module** doubles the output frequency to ~10Hz by interpolating between consecutive outputs.
 
@@ -95,7 +88,7 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 **Documentation**:
 - Detailed guide: `INTERPOLATION_README.md`
 
-### Real-time with Nintendo Switch (capture card)
+### Online with Nintendo Switch (capture card)
 
 This guide explains how to capture motion from games like Just Dance using a Nintendo Switch and HDMI capture card.
 
@@ -154,6 +147,9 @@ Press enter again, just as you press the "a" button on the Switch Controller...
 
 #### 4) Advanced Options
 
+<details>
+<summary>Show / hide</summary>
+
 **Debug Timing:**
 ```bash
 # Verify output intervals
@@ -169,7 +165,12 @@ This will print timing information for each UDP output:
 ...
 ```
 
+</details>
+
 #### 5) Troubleshooting
+
+<details>
+<summary>Show / hide</summary>
 
 **Camera Issues:**
 - If OpenCV fails to open the device, try another index or ensure no other app is using it
@@ -190,6 +191,8 @@ This will print timing information for each UDP output:
 - Verify UDP receiver is running on the configured IP and port
 - Check firewall settings if receiver is on a different machine
 - Default: `127.0.0.1:54010` (configured in `Switch4EmbodiedAI/modules/pipeline.py`)
+
+</details>
 
 ### Configuration reference
 - `SimpleStreamModuleConfig` in `Switch4EAI/modules/stream_modules.py`
