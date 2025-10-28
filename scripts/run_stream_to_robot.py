@@ -53,54 +53,23 @@ def send_output_via_udp(out: dict, client: UDPComm, cfg: PipelineConfig, is_inte
             print(f"[DEBUG #0001] {'INTERP' if is_interpolated else 'ACTUAL':6s} | First output (no interval)")
         _debug_timing_state["last_send_time"] = current_time
     
-    if "qpos" in out:
-        # visual mode: send JSON with derived fields
-        payload = {
-            "type": "qpos",
-            "qpos": out["qpos"].astype("float32").flatten().tolist(),
-            "interpolated": is_interpolated,
-        }
-        if "derived" in out:
-            # Lock the root x,y to 0
-            out["derived"]["root_pos"][0] = 0
-            out["derived"]["root_pos"][1] = 0
-            payload.update(out["derived"])  # already basic python lists
-        client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
-    else:
-        md = out["motion_data"]
-        payload = {
-            "type": "motion_data",
-            "fps": int(md.get("fps", 30)),
-            "root_pos": md["root_pos"].reshape(-1).tolist(),
-            "root_rot": md["root_rot"].reshape(-1).tolist(),
-            "dof_pos": md["dof_pos"].reshape(-1).tolist(),
-            "interpolated": is_interpolated,
-        }
-        if md.get("local_body_pos", None) is not None:
-            payload["local_body_pos"] = md["local_body_pos"].reshape(-1, 3).tolist()
-        if md.get("root_vel", None) is not None:
-            payload["root_vel"] = md["root_vel"].reshape(-1).tolist()
-        if md.get("root_ang_vel", None) is not None:
-            payload["root_ang_vel"] = md["root_ang_vel"].reshape(-1).tolist()
-        if md.get("dof_vel", None) is not None:
-            payload["dof_vel"] = md["dof_vel"].reshape(-1).tolist()
-        client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
-
-
-def send_default_via_udp(default_pose: dict, client: UDPComm, cfg: PipelineConfig):
-    """Helper function to send default pose via UDP."""
-    if client is None:
-        return
-    
-    md = default_pose["motion_data"]
+    md = out["motion_data"]
     payload = {
         "type": "motion_data",
         "fps": int(md.get("fps", 30)),
         "root_pos": md["root_pos"].reshape(-1).tolist(),
         "root_rot": md["root_rot"].reshape(-1).tolist(),
         "dof_pos": md["dof_pos"].reshape(-1).tolist(),
-        "interpolated": False,
+        "interpolated": is_interpolated,
     }
+    if md.get("local_body_pos", None) is not None:
+        payload["local_body_pos"] = md["local_body_pos"].reshape(-1, 3).tolist()
+    if md.get("root_vel", None) is not None:
+        payload["root_vel"] = md["root_vel"].reshape(-1).tolist()
+    if md.get("root_ang_vel", None) is not None:
+        payload["root_ang_vel"] = md["root_ang_vel"].reshape(-1).tolist()
+    if md.get("dof_vel", None) is not None:
+        payload["dof_vel"] = md["dof_vel"].reshape(-1).tolist()
     client.send_json_message(payload, cfg.udp_ip, cfg.udp_send_port)
 
 
@@ -159,28 +128,8 @@ def main():
     client = None
     if cfg.udp_enabled:
         client = UDPComm(cfg.udp_ip, cfg.udp_send_port)
-    
-    # Get user timing inputs before starting pipeline
-    wait_time, song_duration = get_user_timing_inputs()
-    
-    # Get default pose from GMR
-    default_pose = pipeline.gmr.get_default_pose()
-    
-    # Send default pose during wait time
-    if client is not None and wait_time > 0:
-        print(f"\nSending default pose for {wait_time:.1f} seconds...")
-        wait_start = time.time()
-        send_interval = 0.1  # Send at 10Hz
-        next_send = wait_start
-        
-        while time.time() - wait_start < wait_time:
-            current = time.time()
-            if current >= next_send:
-                send_default_via_udp(default_pose, client, cfg)
-                next_send += send_interval
-            time.sleep(0.01)
-        
-        print("Wait time complete. Starting motion capture...")
+
+    pipeline.start()
     
     use_interpolation = not args.no_interpolation
     
@@ -201,7 +150,38 @@ def main():
     else:
         print("Running at native ~5Hz (no interpolation)")
     
-    pipeline.start()
+    # Get user timing inputs before starting pipeline
+    wait_time, song_duration = get_user_timing_inputs()
+    
+    # Get default pose from GMR
+    default_pose = pipeline.gmr.get_default_pose()
+
+    # Send default pose during wait time
+    if client is not None and wait_time > 0:
+        print(f"\nSending default pose for {wait_time:.1f} seconds...")
+        wait_start = time.time()
+        send_interval = 0.1  # Send at 10Hz
+        next_send = wait_start
+
+        # Prefill buffer if wait_time is insufficient
+        first_frame = pipeline.stream.read()
+        required_frames = cfg.gvhmr.win_size
+        frames_during_wait = int(wait_time * 10)  # 10Hz step rate
+        if frames_during_wait < required_frames:
+            prefill_count = 20 + required_frames - frames_during_wait # 20 is safety guard (2sec)
+            print(f"Prefilling buffer with {prefill_count} frames...")
+            pipeline.gvhmr.prefill_buffer_with_frame(first_frame, prefill_count)
+        
+        while time.time() - wait_start < wait_time:
+            current = time.time()
+            if current >= next_send:
+                send_output_via_udp(default_pose, client, cfg, is_interpolated=False)
+                next_send += send_interval
+
+                _ = pipeline.gvhmr.step(pipeline.stream.read())
+            time.sleep(0.01)
+        
+        print("Wait time complete. Starting motion capture...")
     
     try:
         capture_start = time.time()

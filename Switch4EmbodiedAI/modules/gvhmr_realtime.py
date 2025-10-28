@@ -97,6 +97,25 @@ class GVHMRRealtime:
             self.K_fullimg_perframe = estimate_K(width, height)
         self.initialized_intrinsics = True
 
+    def prefill_buffer_with_frame(self, frame_bgr: np.ndarray, count: int):
+        """
+        Prefill buffer with the same frame repeated.
+        
+        Args:
+            frame_bgr: Frame to replicate
+            count: Number of times to replicate
+        """
+        height, width = frame_bgr.shape[:2]
+        self._ensure_intrinsics(width, height)
+        
+        xyxy = _detect_person_xyxy(self.yolo, frame_bgr)
+        if xyxy is None:
+            xyxy = np.array([0, 0, width - 1, height - 1], dtype=np.float32)
+        
+        for _ in range(count):
+            self.frames_window.append(frame_bgr.copy())
+            self.bbx_xyxy_window.append(xyxy.copy())
+
     @torch.no_grad()
     def step(self, frame_bgr: np.ndarray) -> dict | None:
         height, width = frame_bgr.shape[:2]

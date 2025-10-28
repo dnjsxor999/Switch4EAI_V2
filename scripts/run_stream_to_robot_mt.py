@@ -17,7 +17,7 @@ from Switch4EmbodiedAI.modules.stream_module import SimpleStreamModule
 from Switch4EmbodiedAI.modules.gvhmr_realtime import GVHMRRealtimeConfig
 from Switch4EmbodiedAI.modules.gmr_retarget import GMRConfig
 from Switch4EmbodiedAI.modules.UDPcomm_module import UDPComm
-from Switch4EmbodiedAI.modules.interpolator import OutputInterpolator
+from Switch4EmbodiedAI.utils.interpolator import OutputInterpolator
 
 
 @dataclass

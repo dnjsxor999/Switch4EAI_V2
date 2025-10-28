@@ -133,7 +133,7 @@ class GMRRetarget:
                 "dof_pos": np.asarray(qpos[7:])[None, ...],
             }
             return motion_data
-        return qpos
+        return None
 
     def get_default_pose(self) -> dict:
         """
@@ -143,7 +143,7 @@ class GMRRetarget:
             motion_data dict with default pose
         """
         # Default standing pose with zero joint positions
-        root_pos = np.zeros(3)
+        root_pos = np.array([0.0, 0.0, 0.793])
         root_rot = np.array([0.0, 0.0, 0.0, 1.0])  # identity quaternion (xyzw)
         dof_pos = np.zeros(23)  # G1 has 23 DOF
         
