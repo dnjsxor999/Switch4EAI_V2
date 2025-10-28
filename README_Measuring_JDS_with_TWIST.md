@@ -15,7 +15,7 @@ git checkout switch4eai
 
 **3**. Install packages: 
 (Note 1) Below instruction assumes you are using same conda environemt as the `switch4eai`.
-(Note 2) You can also create a separate conda environment following the installation process of the forked [TWIST repo](./third_party/TWIST/)
+(Note 2) You can also create a separate conda environment following the installation process of the forked [TWIST repo](https://github.com/whitealex95/TWIST/tree/switch4eai)
 Install the below dependencies:
 ```bash
 cd rsl_rl && pip install -e . && cd ..
