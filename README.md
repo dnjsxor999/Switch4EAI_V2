@@ -83,6 +83,11 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 **Documentation**:
 - Detailed guide: `INTERPOLATION_README.md`
 
+### Offline with Nintendo Switch
+
+Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./README_Measuring_JDS_with_TWIST.md)
+
+
 ### Online with Nintendo Switch (capture card)
 
 This guide explains how to capture motion from games like Just Dance using a Nintendo Switch and HDMI capture card.
