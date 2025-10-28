@@ -1,5 +1,5 @@
 # Measuring Just Dance Score(JDS) with TWIST controller
-This readme walks through the flow of testing Switch4EAI using TWIST as a low-level controller.
+This readme walks through the flow of testing Switch4EAI using [TWIST](https://yanjieze.com/TWIST/) as a low-level controller.
 
 
 ## TWIST installation
@@ -15,7 +15,7 @@ git checkout switch4eai
 
 **3**. Install packages: 
 (Note 1) Below instruction assumes you are using same conda environemt as the `switch4eai`.
-(Note 2) You can also create a separate conda environment following the installation process of the forked [TWIST repo](https://github.com/whitealex95/TWIST/tree/switch4eai)
+(Note 2) You can also create a separate conda environment following the installation process of the [forked TWIST repo](https://github.com/whitealex95/TWIST/tree/switch4eai)
 Install the below dependencies:
 ```bash
 cd rsl_rl && pip install -e . && cd ..
@@ -86,10 +86,12 @@ python server_low_level_g1_real.py --policy_path PATH/TO/YOUR/JIT/MODEL --net YO
 
 ## Measuring Offline Just Dance Score(JDS):
 You don't need Nintendo Switch to be connected to a computer for running this offline experiment.
+
 **1**. Run low-level controller:
 
 Sim:
 ```bash
+cd third_party/TWIST/deploy_real
 python server_low_level_g1_sim.py --policy_path PATH/TO/YOUR/JIT/MODEL
 ```
 
@@ -116,10 +118,12 @@ These data were generated using [GVHMR](https://github.com/zju3dv/GVHMR) and [GM
 
 ## Measuring Online Just Dance Score(JDS):
 You need Nintendo Switch to be connected to a computer for running this online experiment.
+
 **1**. Run low-level controller:
 
 Sim:
 ```bash
+cd third_party/TWIST/deploy_real
 python server_low_level_g1_sim.py --policy_path PATH/TO/YOUR/JIT/MODEL
 ```
 
@@ -133,6 +137,7 @@ python server_low_level_g1_real.py --policy_path PATH/TO/YOUR/JIT/MODEL --net YO
 
 This script reads socket streams from the Switch4EAI pipeline and update the imitation_observation in the redis server used by the low-level controller
 ```bash
+cd third_party/TWIST/deploy_real
 python server_switch4eai.py
 ```
 
