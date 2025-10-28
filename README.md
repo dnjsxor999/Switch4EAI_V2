@@ -85,7 +85,8 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 
 ### Offline with Nintendo Switch
 
-Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./README_Measuring_JDS_with_TWIST.md)
+To measure the Just Dance Score, you can simply play the GMR's output pickle file from the offline motion with the switch controller attached to the robot's right hand.
+Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./README_Measuring_JDS_with_TWIST.md#measuring-offline-just-dance-scorejds)
 
 
 ### Online with Nintendo Switch (capture card)
