@@ -4,6 +4,7 @@ import argparse
 import cv2
 import time
 import threading
+import torch
 
 # Ensure repo root is importable before importing our package modules
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -175,18 +176,31 @@ def main():
         while time.time() - wait_start < wait_time:
             current = time.time()
             if current >= next_send:
+                last_pred = pipeline.run_once()
                 send_output_via_udp(default_pose, client, cfg, is_interpolated=False)
                 next_send += send_interval
-
-                _ = pipeline.gvhmr.step(pipeline.stream.read())
             time.sleep(0.01)
-        
+        torch.cuda.synchronize()
+        print("================================================")
         print("Wait time complete. Starting motion capture...")
+        print("================================================")
+    
+    # pre-initialize interpolator
+    # if use_interpolation and last_pred is not None:
+    #     interpolator.update(last_pred)
+        # first_actual_out = interpolator.get_actual_output()
+        # # if first_actual_out is not None:
+        # #     send_output_via_udp(first_actual_out, client, cfg, is_interpolated=False)
     
     try:
         capture_start = time.time()
         while time.time() - capture_start < song_duration:
-            out = pipeline.run_once()
+            if last_pred is not None:
+                out = last_pred
+                last_pred = None
+            else:
+                out = pipeline.run_once()
+
             if out is None:
                 continue
             
@@ -206,7 +220,10 @@ def main():
         print(f"\nMotion capture complete. Captured for {song_duration:.1f} seconds.")
                 
     except KeyboardInterrupt:
-        pass
+        stop_event.set()
+        if sender_thread is not None:
+            sender_thread.join(timeout=1.0)
+        pipeline.close()
     finally:
         stop_event.set()
         if sender_thread is not None:
