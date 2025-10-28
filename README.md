@@ -146,7 +146,7 @@ Press enter again, just as you press the "a" button on the Switch Controller...
 9. Automatically stops after song duration
 
 <details>
-<summary>4) Advanced Options</summary>
+<summary><strong>4) Advanced Options</strong></summary>
 
 **Debug Timing:**
 ```bash
@@ -167,7 +167,7 @@ This will print timing information for each UDP output:
 
 
 <details>
-<summary>5) Troubleshooting</summary>
+<summary><strong>5) Troubleshooting</strong></summary>
 
 **Camera Issues:**
 - If OpenCV fails to open the device, try another index or ensure no other app is using it
