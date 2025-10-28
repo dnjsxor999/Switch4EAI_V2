@@ -32,11 +32,6 @@ Notes:
 
 ## Pipeline
 
-**Online** GVHMR demo from video (single-thread):
-```
-python scripts/online_gvhmr_test.py --video=/path/to/video.mp4 --win_size=30 -s
-```
-
 **Offline** retarget GMR trajectory from GVHMR result(all hmr4d_results.pt):
 ```
 ./scripts/run_offline_gvhmr_to_gmr.sh \
