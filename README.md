@@ -4,31 +4,7 @@ Switch4EmbodiedAI
 - previous version of Switch4EmbodiedAI is [Switch4EAI_V1](https://github.com/EasyPaperSniper/Switch4EmbodiedAI)
 
 ## Installation
-
-1) Clone with submodules
-```
-git clone --recursive https://github.com/dnjsxor999/Switch4EAI_V2.git Switch4EAI
-cd Switch4EAI
-```
-
-2) Create env
-```
-conda env create -f environment.yml
-conda activate switch4eai
-```
-
-3) Install submodules in editable mode (keeps imports stable)
-```
-pip install -e third_party/GMR
-pip install -e third_party/GVHMR
-pip install -e . #our switch4eai
-```
-
-Notes:
-- The env pins PyTorch 2.3.0+cu121 and Pytorch3D wheel for CUDA 12.1. Adjust if your CUDA differs.
-- GMR expects body models smplx under `third_party/GMR/assets/body_models/` per its [README](https://github.com/YanjieZe/GMR/blob/master/README.md)
-- GVHMR expects checkpoints (YOLO, model ckpt) under `third_party/GVHMR/inputs/checkpoints/...` per its [README](https://github.com/zju3dv/GVHMR/blob/main/docs/INSTALL.md)
-
+Please refer to [SETUP.md](./docs/SETUP.md) for installation and configuration steps.
 
 ## Pipeline
 
@@ -40,7 +16,7 @@ Notes:
      --robot unitree_g1 --record_video --offset_ground --joint_vel_limit
 ```
 
-**Real-time** demo: Stream -> GVHMR -> GMR (single-thread + interpolating thread):
+**Online** demo: Stream -> GVHMR -> GMR (single-thread + interpolating thread):
 ```
 python scripts/run_stream_to_robot.py                # default /dev/video0 (with hardware)
 python scripts/run_stream_to_robot.py --list-cams    # list available cameras (with hardware)
@@ -81,12 +57,12 @@ python scripts/run_stream_to_robot.py --camera 0 --debug-timing
 - One-time 0.2s initial lag (acceptable to test with game)
 
 **Documentation**:
-- Detailed guide: `INTERPOLATION_README.md`
+- Detailed guide: [`docs/INTERPOLATION_README.md`](./docs/INTERPOLATION_README.md)
 
 ### Offline with Nintendo Switch
 
 To measure the Just Dance Score, you can simply play the GMR's output pickle file from the offline motion with the switch controller attached to the robot's right hand.
-Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./README_Measuring_JDS_with_TWIST.md#measuring-offline-just-dance-scorejds)
+Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./docs/README_Measuring_JDS_with_TWIST.md#measuring-offline-just-dance-scorejds)
 
 
 ### Online with Nintendo Switch (capture card)
