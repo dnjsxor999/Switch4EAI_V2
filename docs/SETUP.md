@@ -3,7 +3,7 @@ This document goes through system requirements for the Switch4EAI project:
 
 - Our setup was tested on Ubuntu 2020.4 LTS with RTX 4090 GPU.
 
-- We use Nintendo Switch 1 with JustDance 2015 and JustDance+ for the experiment.
+- We use Nintendo Switch 1 with JustDance 2025 and JustDance+ for the experiment.
 
 ## Installation
 
