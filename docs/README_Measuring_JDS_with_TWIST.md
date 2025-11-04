@@ -111,7 +111,7 @@ To run the motion, execute the command below and press the **"A" button at the s
 python server_high_level_motion_lib.py --motion_file PATH/TO/PICKLE/FILE --vis
 ```
 
-The pickled robot motion data(padded) along with the video(not-padded) is accessible in the [google drive](https://drive.google.com/drive/folders/13Afbi75H49b-dn3Yu7f78Wg-umV1XnOb?usp=sharing).
+The pickled robot motion data(padded) along with the video(not-padded) is accessible in the [google drive](https://drive.google.com/drive/u/0/folders/1rOZSg6ito-b1Fir0KNuZAIwNGr9vdhb8).
 
 These data were generated using [GVHMR](https://github.com/zju3dv/GVHMR) and [GMR](https://github.com/YanjieZe/GMR), based on mirrored video recordings of the Nintendo Switch screen so the robot can directly follow the performer’s motion.
 
