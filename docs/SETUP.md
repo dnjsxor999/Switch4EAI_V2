@@ -36,7 +36,7 @@ Notes:
 
 | **Switch Setup (Robot)** | **Switch Setup (Online)** |
 |:---:|:---:|
-| [![Switch Setup (Robot)](./images/switch_controller.jpg)](./images/switch_controller.jpg) <br> *Attach a Nintendo Switch controller securely to the robot’s right hand. The controller is used to interact with the game in real time.* | [![Switch Setup (Online)](./images/capture_card.jpg)](./images/capture_card.jpg) <br> *Use a video capture card to stream the Nintendo Switch’s HDMI output to the Ubuntu machine for online synchronization.* |
+| <img src="./images/switch_on_right_arm.png" width="350"/> <br> *Attach a Nintendo Switch controller securely to the robot’s right hand. The controller is used to interact with the game in real time. (Note, it's better to avoid putting tape on the "+" button)* | <img src="./images/capture_card_annotated.png" width="350"/> <br> *Use a video capture card to stream the Nintendo Switch’s HDMI output to the Ubuntu machine for online synchronization.* |
 
 ### Switch Setup (Robot)
 1) Attach a Nintendo Switch controller on the robot's right hand as shown in the below image
