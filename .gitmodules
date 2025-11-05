@@ -3,7 +3,7 @@
 	url = https://github.com/dnjsxor999/GMR_fork.git
 [submodule "third_party/GVHMR"]
 	path = third_party/GVHMR
-	url = https://github.com/zju3dv/GVHMR.git
+	url = https://github.com/whitealex95/GVHMR.git
 [submodule "third_party/TWIST"]
     path = third_party/TWIST
     url = https://github.com/whitealex95/TWIST.git
