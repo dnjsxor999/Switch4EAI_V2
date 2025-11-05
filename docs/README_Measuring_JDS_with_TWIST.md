@@ -142,7 +142,7 @@ cd third_party/TWIST/deploy_real
 python server_switch4eai.py
 ```
 
-**3**. Run the Switch4EAI's streaming module written in [README.md](./README.md#real-time-with-nintendo-switch-capture-card)
+**3**. Run the Switch4EAI's streaming module written in [README.md](../README.md#real-time-with-nintendo-switch-capture-card)
 
 With Nintendo Switch connected to the computer:
 ```bash
