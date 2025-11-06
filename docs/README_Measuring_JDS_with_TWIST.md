@@ -116,6 +116,12 @@ The pickled robot motion data(padded) along with the video(not-padded) is access
 These data were generated using [GVHMR](https://github.com/zju3dv/GVHMR) and [GMR](https://github.com/YanjieZe/GMR), based on mirrored video recordings of the Nintendo Switch screen so the robot can directly follow the performer’s motion.
 
 
+| **Demo Sim(Screen Capture)** | **Demo Sim(Phone Recording)** |
+|:---:|:---:|
+| <video width="350" controls> <source src="./videos/Heart_Of_Glass_Twist_sim_offline_success.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br> *Screen Capture of running TWIST in sim using padded motion* | <video width="350" controls> <source src="./videos/Heart_Of_Glass_TWIST_sim_phone.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br> *Pressing "A" in the Switch controller is synced with starting of the padded motion. Note that the required padding may differ based on switch's internet setting* |
+
+[Notion link](https://www.notion.so/jkim3662/Offline-TWIST_SIM-Shared-2a33ce90ec838044b7becdf3cd46ab9e)
+
 
 ## Measuring Online Just Dance Score(JDS):
 You need Nintendo Switch to be connected to a computer for running this online experiment.

@@ -65,6 +65,9 @@ To measure the Just Dance Score, you can simply play the GMR's output pickle fil
 Example usage of offline motion data with [TWIST](https://github.com/YanjieZe/TWIST) low-level controller is in a separate [README_Measuring_JDS_with_TWIST](./docs/README_Measuring_JDS_with_TWIST.md#measuring-offline-just-dance-scorejds)
 
 
+Videos of Offline testing with TWIST controller in simulation is in this [notion link](https://www.notion.so/jkim3662/Offline-TWIST_SIM-Shared-2a33ce90ec838044b7becdf3cd46ab9e)
+
+
 ### Online with Nintendo Switch (capture card)
 
 This guide explains how to capture motion from games like Just Dance using a Nintendo Switch and HDMI capture card.
