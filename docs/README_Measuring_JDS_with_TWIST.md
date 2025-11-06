@@ -118,7 +118,7 @@ These data were generated using [GVHMR](https://github.com/zju3dv/GVHMR) and [GM
 
 | **Demo Sim(Screen Capture)** | **Demo Sim(Phone Recording)** |
 |:---:|:---:|
-| <video width="350" controls> <source src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_Twist_sim_offline_success.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br> *Screen Capture of running TWIST in sim using padded motion* | <video width="350" controls> <source src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_TWIST_sim_phone.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br> *Pressing "A" in the Switch controller is synced with starting of the padded motion. Note that the required padding may differ based on switch's internet setting* |
+| [<img src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_Twist_sim_offline_success.gif" width="240px">](https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_Twist_sim_offline_success.mp4) <br> *Screen Capture of running TWIST in sim using padded motion* |[<img src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_TWIST_sim_offline_phone.gif" width="240px">](https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Heart_Of_Glass_TWIST_sim_offline_phone.mp4)<br> *Pressing "A" in the Switch controller is synced with starting of the padded motion. Note that the required padding may differ based on switch's internet setting* |
 
 [Notion link](https://www.notion.so/jkim3662/Offline-TWIST_SIM-Shared-2a33ce90ec838044b7becdf3cd46ab9e)
 
@@ -164,4 +164,10 @@ Press enter again, just as you press the "a" button on the Switch Controller...
 ```
 
 Wait time and song duration information are liste in [SONG_INFO](./SONG_INFO.md).
-For example, when playing `Old Town Road`, you should input 4.1 for wait time and 161 for song duration.
+For example, when playing `Unstoppable`, you should input 12.2 for wait time and 204 for song duration.
+
+| **Demo Sim(Screen Capture)** | **Demo Sim(Phone Recording)** |
+|:---:|:---:|
+| [<img src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Unstoppable_Twist_sim_online_success.gif" width="240px">](https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Unstoppable_Twist_sim_online_success.mp4) <br>*Screen Capture of running TWIST in sim using Online pipeline of Switch4EAI with num_interp=2* |[<img src="https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Unstoppable_Twist_sim_online_phone.gif" width="240px">](https://github.com/dnjsxor999/Switch4EAI_V2/releases/download/media/Unstoppable_Twist_sim_online_phone.mp4)<br> *Pressing "A" in the Switch controller is synced with starting of the padded motion. Note that the required padding may differ based on switch's internet setting* |
+
+[Notion link](https://www.notion.so/jkim3662/Online-TWIST_SIM-Shared-2a33ce90ec838055b2effaca622418dd?source=copy_link)
