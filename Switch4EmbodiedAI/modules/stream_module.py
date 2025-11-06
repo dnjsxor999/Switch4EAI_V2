@@ -6,15 +6,46 @@ import numpy as np
 import signal
 
 class VideoCapture(cv2.VideoCapture):
-    def __init__(self, *args, mirror=False, **kwargs):
+    def __init__(self, *args, mirror=False, blur_profile=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.mirror = mirror
+        self.blur_profile = blur_profile
+
+        # ratios from your original crop region
+        self.x_ratio = 280 / 1280
+        self.y_ratio = 0   / 720
+        self.w_ratio = 170 / 1280
+        self.h_ratio = 110 / 720
 
     def read(self):
         grabbed, frame = super().read()
-        if grabbed and self.mirror:
+        if not grabbed:
+            return grabbed, frame
+
+        if self.blur_profile:
+            # Blur Profile Image
+            h, w = frame.shape[:2]
+
+            # compute region in this frame size
+            x = int(self.x_ratio * w)
+            y = int(self.y_ratio * h)
+            ww = int(self.w_ratio * w)
+            hh = int(self.h_ratio * h)
+
+            # extract ROI
+            roi = frame[y:y+hh, x:x+ww]
+
+            # blur ROI (Gaussian blur similar to boxblur)
+            blurred = cv2.GaussianBlur(roi, (0, 0), sigmaX=20)
+
+            # replace back
+            frame[y:y+hh, x:x+ww] = blurred
+
+        if self.mirror:
             frame = cv2.flip(frame, 1)
+
         return grabbed, frame
+
 
 # from Switch4EmbodiedAI.utils.helpers import signal_handler
 class SimpleStreamModuleConfig():
