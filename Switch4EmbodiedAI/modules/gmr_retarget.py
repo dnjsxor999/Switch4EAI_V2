@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from scipy.spatial.transform import Rotation as R
 
 # Ensure GMR submodule importable
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +29,9 @@ class GMRConfig:
     joint_vel_limit: bool = True
     collision_avoid: bool = False
     offset_ground: bool = True
+    # Base pitch constraint
+    base_pitch_limit: bool = True
+    base_pitch_max_rad: float = 0.10
 
 
 class GMRRetarget:
@@ -41,6 +45,24 @@ class GMRRetarget:
             use_velocity_limit=self.cfg.joint_vel_limit,
             use_collision_avoidance=self.cfg.collision_avoid,
         )
+
+        if self.cfg.base_pitch_limit:
+            from Switch4EmbodiedAI.utils.base_pitch_limit import BasePitchConfigurationLimit
+            base_limit = BasePitchConfigurationLimit(
+                self.retarget.model,
+                joint_name=None,
+                max_pitch_rad=self.cfg.base_pitch_max_rad,
+                axis="y",
+                gain=1.0,
+            )
+            # Append to the IK limits used by mink.solve_ik
+            if hasattr(self.retarget, 'ik_limits') and isinstance(self.retarget.ik_limits, list):
+                self.retarget.ik_limits.append(base_limit)
+            print(f"[GMRRetarget] Base pitch limit applied with max pitch {self.cfg.base_pitch_max_rad} rad")
+
+        # Debug flag: print base pitch a few times to verify constraint effect
+        self._debug_pitch_prints_remaining = 20
+
         self.viewer = None
         if self.cfg.visualize:
             self.viewer = RobotMotionViewer(
@@ -114,6 +136,20 @@ class GMRRetarget:
 
     def vis_step(self, smplx_data_frame: dict) -> np.ndarray:
         qpos = self.retarget.retarget(smplx_data_frame, self.cfg.offset_ground)
+
+        #######################################################################
+        ### Debug: print base pitch a few times to verify constraint effect ###
+        if self._debug_pitch_prints_remaining > 0:
+            wxyz = qpos[3:7]
+            xyzw = np.array([wxyz[1], wxyz[2], wxyz[3], wxyz[0]])
+            euler_xyz = R.from_quat(xyzw).as_euler('xyz', degrees=False)
+            pitch = float(euler_xyz[1])
+            print(f"[BasePitch] pitch={pitch:.3f} rad (max={getattr(self.cfg,'base_pitch_max_rad',np.nan):.3f})")
+            self._debug_pitch_prints_remaining -= 1
+        ### End debug ###
+        #################
+
+
         if self.viewer is not None:
             self.viewer.step(
                 root_pos=qpos[:3],
