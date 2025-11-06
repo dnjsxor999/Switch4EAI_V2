@@ -1,3 +1,6 @@
+import os
+import cv2
+
 import sys
 from pathlib import Path
 from dataclasses import dataclass
@@ -28,7 +31,7 @@ from hmr4d.model.gvhmr.gvhmr_pl_demo import DemoPL # type: ignore
 
 @dataclass
 class GVHMRRealtimeConfig:
-    win_size: int = 60
+    win_size: int = 120
     static_cam: bool = True
     use_dpvo: bool = False
     f_mm: int | None = None
@@ -51,6 +54,7 @@ def _detect_person_xyxy(yolo: YOLO, frame_np: np.ndarray) -> np.ndarray | None:
 
 class GVHMRRealtime:
     def __init__(self, cfg: GVHMRRealtimeConfig):
+        self.frame_cnt = 0
         self.cfg = cfg
 
         # YOLO detector
@@ -115,6 +119,23 @@ class GVHMRRealtime:
         for _ in range(count):
             self.frames_window.append(frame_bgr.copy())
             self.bbx_xyxy_window.append(xyxy.copy())
+    
+    def overwrite_buffer_with_frame(self, frame_bgr: np.ndarray):
+        """
+        Overwrite the entire buffer with the same frame repeated.
+        
+        Args:
+            frame_bgr: Frame to replicate
+        """
+        height, width = frame_bgr.shape[:2]
+        self._ensure_intrinsics(width, height)
+        
+        xyxy = _detect_person_xyxy(self.yolo, frame_bgr)
+        if xyxy is None:
+            xyxy = np.array([0, 0, width - 1, height - 1], dtype=np.float32)
+        
+        self.frames_window = [frame_bgr.copy() for _ in range(self.cfg.win_size)]
+        self.bbx_xyxy_window = [xyxy.copy() for _ in range(self.cfg.win_size)]
 
     @torch.no_grad()
     def step(self, frame_bgr: np.ndarray) -> dict | None:
@@ -128,6 +149,14 @@ class GVHMRRealtime:
             else:
                 xyxy = self.last_xyxy
         self.last_xyxy = xyxy
+
+        # === DEBUG SAVE BBOX CROP ===
+        os.makedirs("dev/debug_bbx", exist_ok=True)
+        x1, y1, x2, y2 = xyxy.astype(int)
+        crop = frame_bgr[y1:y2, x1:x2]
+        cv2.imwrite(f"dev/debug_bbx/frame_{self.frame_cnt:06d}.jpg", crop)
+        self.frame_cnt += 1
+        # ============================
 
         self.frames_window.append(frame_bgr)
         self.bbx_xyxy_window.append(xyxy)

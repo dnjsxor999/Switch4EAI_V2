@@ -156,6 +156,7 @@ def main():
     
     # Get default pose from GMR
     default_pose = pipeline.gmr.get_default_pose()
+    last_pred = None
 
     # Send default pose during wait time
     if client is not None and wait_time > 0:
@@ -164,19 +165,32 @@ def main():
         send_interval = 0.1  # Send at 10Hz
         next_send = wait_start
 
-        # Prefill buffer if wait_time is insufficient
+        # # Prefill buffer if wait_time is insufficient
         first_frame = pipeline.stream.read()
-        required_frames = cfg.gvhmr.win_size
-        frames_during_wait = int(wait_time * 10)  # 10Hz step rate
-        if frames_during_wait < required_frames:
-            prefill_count = 20 + required_frames - frames_during_wait # 20 is safety guard (2sec)
-            print(f"Prefilling buffer with {prefill_count} frames...")
-            pipeline.gvhmr.prefill_buffer_with_frame(first_frame, prefill_count)
+        # required_frames = cfg.gvhmr.win_size
+        # frames_during_wait = int(wait_time * 10)  # 10Hz step rate
+        # if frames_during_wait < required_frames:
+        #     prefill_count = 20 + required_frames - frames_during_wait # 20 is safety guard (2sec)
+        #     print(f"Prefilling buffer with {prefill_count} frames...")
+        #     pipeline.gvhmr.prefill_buffer_with_frame(first_frame, prefill_count)
         
+        prefill_frame_path = "dev/frames/frame_000380.png"
+        prefill_frame = cv2.imread(prefill_frame_path)
+        # prefill_frame = first_frame
+
+        # Resize to match pipeline frame size
+        target_h, target_w, _ = pipeline.stream.read().shape
+        prefill_frame = cv2.resize(prefill_frame, (target_w, target_h))
+
         while time.time() - wait_start < wait_time:
             current = time.time()
             if current >= next_send:
-                last_pred = pipeline.run_once()
+                if True:
+                    pipeline.gvhmr.overwrite_buffer_with_frame(prefill_frame)
+                
+                # last_pred = pipeline._process_frame(prefill_frame)
+                _ = pipeline.gvhmr.step(prefill_frame)
+                # _ = pipeline.gvhmr.step(pipeline.stream.read())
                 send_output_via_udp(default_pose, client, cfg, is_interpolated=False)
                 next_send += send_interval
             time.sleep(0.01)
@@ -184,7 +198,7 @@ def main():
         print("================================================")
         print("Wait time complete. Starting motion capture...")
         print("================================================")
-    
+        print("frame_cnt after the wait time: ", pipeline.gvhmr.frame_cnt, "at time: ", time.time() - wait_start)
     # pre-initialize interpolator
     # if use_interpolation and last_pred is not None:
     #     interpolator.update(last_pred)
