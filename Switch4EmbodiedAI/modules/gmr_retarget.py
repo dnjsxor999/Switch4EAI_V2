@@ -137,17 +137,17 @@ class GMRRetarget:
     def vis_step(self, smplx_data_frame: dict) -> np.ndarray:
         qpos = self.retarget.retarget(smplx_data_frame, self.cfg.offset_ground)
 
-        #######################################################################
-        ### Debug: print base pitch a few times to verify constraint effect ###
-        if self._debug_pitch_prints_remaining > 0:
-            wxyz = qpos[3:7]
-            xyzw = np.array([wxyz[1], wxyz[2], wxyz[3], wxyz[0]])
-            euler_xyz = R.from_quat(xyzw).as_euler('xyz', degrees=False)
-            pitch = float(euler_xyz[1])
-            print(f"[BasePitch] pitch={pitch:.3f} rad (max={getattr(self.cfg,'base_pitch_max_rad',np.nan):.3f})")
-            self._debug_pitch_prints_remaining -= 1
-        ### End debug ###
-        #################
+        # #######################################################################
+        # ### Debug: print base pitch a few times to verify constraint effect ###
+        # if self._debug_pitch_prints_remaining > 0:
+        #     wxyz = qpos[3:7]
+        #     xyzw = np.array([wxyz[1], wxyz[2], wxyz[3], wxyz[0]])
+        #     euler_xyz = R.from_quat(xyzw).as_euler('xyz', degrees=False)
+        #     pitch = float(euler_xyz[1])
+        #     print(f"[BasePitch] pitch={pitch:.3f} rad (max={getattr(self.cfg,'base_pitch_max_rad',np.nan):.3f})")
+        #     self._debug_pitch_prints_remaining -= 1
+        # ### End debug ###
+        # #################
 
 
         if self.viewer is not None:
