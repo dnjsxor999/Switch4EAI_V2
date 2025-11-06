@@ -5,6 +5,16 @@ import torch
 import numpy as np
 import signal
 
+class VideoCapture(cv2.VideoCapture):
+    def __init__(self, *args, mirror=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mirror = mirror
+
+    def read(self):
+        grabbed, frame = super().read()
+        if grabbed and self.mirror:
+            frame = cv2.flip(frame, 1)
+        return grabbed, frame
 
 # from Switch4EmbodiedAI.utils.helpers import signal_handler
 class SimpleStreamModuleConfig():
@@ -14,6 +24,7 @@ class SimpleStreamModuleConfig():
     source: str = "camera"  # "camera" or "video"
     video_path: str = None
     loop_video: bool = True
+    mirror: bool = True
 
     # not used
     viz_stream: bool = True  # Whether to visualize the stream module output
@@ -28,9 +39,9 @@ class SimpleStreamModule:
         self.config = config
         self.capture_card_index = config.capture_card_index
         if getattr(self.config, 'source', 'camera') == 'video' and getattr(self.config, 'video_path', None):
-            self.stream = cv2.VideoCapture(self.config.video_path)
+            self.stream = VideoCapture(self.config.video_path, mirror=self.config.mirror)
         else:
-            self.stream = cv2.VideoCapture(self.capture_card_index)
+            self.stream = VideoCapture(self.capture_card_index, mirror=self.config.mirror)
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = True
 
