@@ -4,7 +4,7 @@ Here are the things we'd like you to do:
 
 
 **1.** Record G1’s Dance (Front View)
-- Please record the robot's motion using your camera(a phone is fine), and upload the video (.mp4 format preferred) in [GD](https://drive.google.com/drive/u/0/folders/1m7GYZQWQi4ITUbMhcvMiaNB5pI7gIPo9) (/{your_team}/RobotMotionRecord//{SongName}/) corresponding to the song.
+- Please record the robot's motion using your camera(a phone is fine), and upload the video (.mp4 format preferred) in [GD](https://drive.google.com/drive/u/0/folders/1m7GYZQWQi4ITUbMhcvMiaNB5pI7gIPo9) (/{your_team}/RobotMotionRecord/{SongName}/) corresponding to the song.
 
 **2.** Capture Just Dance Gameplay (Switch Screen Recording)
 - Please record your Just Dance in-game screen using video capture card. We recommend using [OBS](https://obsproject.com/kb/video-capture-sources)
@@ -40,7 +40,7 @@ Here are the things we'd like you to do:
   left_shoulder_pitch_joint
   left_shoulder_roll_joint
   left_shoulder_yaw_joint
-  left_elbow_jointRobotMotionRecord
+  left_elbow_joint
 
   right_shoulder_pitch_joint
   right_shoulder_roll_joint
