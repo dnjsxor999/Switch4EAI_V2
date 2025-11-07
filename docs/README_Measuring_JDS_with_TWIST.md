@@ -102,6 +102,9 @@ cd third_party/TWIST/deploy_real
 python server_low_level_g1_real.py --policy_path PATH/TO/YOUR/JIT/MODEL --net YOUR_NET_INTERFACE_TO_UNITREE_ROBOT
 ```
 
+- In our forked version of TWIST, running above commands will additionally save a comma-separated text file of 28 columns, where each row represents [timestamp(1), dof_pos(23), quat_wxyz(4)] recorded at a control frequency of 50Hz. Full information in [TODO_Collaborator.md](./TODO_Collaborator.md)
+
+
 **2**. Run high-level motion_lib with padded motion.
 There is a time between **"A"** button press and the **start of the dancing motion**. The full information about this timing discrepancy is in [SONG_INFO.md](./SONG_INFO.md):
 To handle this timing discrepancy, we have to **pad the motion file**(`*_padded.pkl`) so that the button press and the motion sequences are synchronized.
@@ -139,6 +142,8 @@ Real:
 cd third_party/TWIST/deploy_real
 python server_low_level_g1_real.py --policy_path PATH/TO/YOUR/JIT/MODEL --net YOUR_NET_INTERFACE_TO_UNITREE_ROBOT
 ```
+
+- In our forked version of TWIST, running above commands will additionally save a comma-separated text file of 28 columns, where each row represents [timestamp(1), dof_pos(23), quat_wxyz(4)] recorded at a control frequency of 50Hz. Full information in [TODO_Collaborator.md](./TODO_Collaborator.md)
 
 **2**. Run high-level motion server
 
