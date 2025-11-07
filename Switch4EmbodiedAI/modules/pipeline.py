@@ -13,9 +13,11 @@ from .gmr_retarget import GMRRetarget, GMRConfig
 # Import GMR utils for per-frame SMPLX-to-joint dict conversion
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GMR_ROOT = REPO_ROOT / "third_party" / "GMR"
+GVHMR_ROOT = REPO_ROOT / "third_party" / "GVHMR"
 if GMR_ROOT.exists():
     sys.path.insert(0, str(GMR_ROOT))
 from general_motion_retargeting.utils.smpl import get_smplx_data # type: ignore
+from smplx import SMPLX
 import general_motion_retargeting.utils.lafan_vendor.utils as gmr_utils # type: ignore
 from scipy.spatial.transform import Rotation as R
 import time
@@ -40,11 +42,14 @@ class StreamToRobotPipeline:
         self.stream = SimpleStreamModule(cfg.stream) if cfg.use_stream else None
         self.gvhmr = GVHMRRealtime(cfg.gvhmr)
         self.gmr = GMRRetarget(cfg.gmr, motion_fps=30)
-        # Prepare SMPLX body model for per-frame conversion (GMR assets path)
+        # Prepare SMPLX body model for per-frame conversion (GVHMR body models path)
         self.cached_betas = None
-        smplx_models_path = GMR_ROOT / "assets" / "body_models"
-        self.body_model = smplx.create(
-            str(smplx_models_path), "smplx", gender="neutral", use_pca=False
+        smplx_models_path = GVHMR_ROOT / "inputs" / "checkpoints" / "body_models" / "smplx"
+        self.body_model = SMPLX(
+            model_path=str(smplx_models_path),
+            gender="neutral",
+            use_pca=False,
+            flat_hand_mean=True,
         )
         # store previous to compute finite differences (velocities)
         self._prev = {
