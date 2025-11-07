@@ -58,8 +58,8 @@ class GVHMRRealtime:
         self.cfg = cfg
 
         # YOLO detector
-        yolo_w = PROJ_ROOT / "inputs/checkpoints/yolo/yolov8x.pt"
-        self.yolo = YOLO(str(yolo_w) if yolo_w.exists() else "yolov8x.pt")
+        yolo_w = PROJ_ROOT / "inputs/checkpoints/yolo/yolo11x.pt"
+        self.yolo = YOLO(str(yolo_w) if yolo_w.exists() else "yolo11x.pt")
 
         # Pose extractor and img feature extractor
         self.vitpose_extractor = VitPoseExtractor()
