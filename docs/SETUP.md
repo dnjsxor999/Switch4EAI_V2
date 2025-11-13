@@ -30,7 +30,7 @@ Notes:
 - The env pins PyTorch 2.3.0+cu121 and Pytorch3D wheel for CUDA 12.1. Adjust if your CUDA differs.
 - GMR expects body models smplx under `third_party/GMR/assets/body_models/` per its [README](https://github.com/YanjieZe/GMR/blob/master/README.md)
 - GVHMR expects checkpoints (YOLO, model ckpt) under `third_party/GVHMR/inputs/checkpoints/...` per its [README](https://github.com/zju3dv/GVHMR/blob/main/docs/INSTALL.md)
-
+- A easy script to prepeare GVHMR models [README](../scripts/small_tools/README_GVHMR_ckpt.md)
 
 ## Switch Hardware Setup
 
