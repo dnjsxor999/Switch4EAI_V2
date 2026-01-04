@@ -178,10 +178,38 @@ class GMRRetarget:
         Returns:
             motion_data dict with default pose
         """
+        # Get DOF count from the robot model (nv is total DOF including root)
+        # qpos format: [root_pos(3), root_rot(4), dof_pos(n)]
+        # So dof_pos size = nv - 7 (3 for root_pos + 4 for root_rot)
+        num_dof = self.retarget.model.nv - 7
+        
         # Default standing pose with zero joint positions
-        root_pos = np.array([0.0, 0.0, 0.793])
+        # Default height varies by robot, using a reasonable default
+        # For most humanoids, 0.75-0.85m is typical
+        default_heights = {
+            "unitree_g1": 0.793,
+            "unitree_g1_with_hands": 0.793,
+            "unitree_h1": 0.85,
+            "unitree_h1_2": 0.85,
+            "booster_t1": 0.80,
+            "booster_t1_29dof": 0.80,
+            "booster_k1": 0.75,
+            "stanford_toddy": 0.50,  # toddler robot
+            "fourier_n1": 0.80,
+            "engineai_pm01": 0.80,
+            "kuavo_s45": 0.85,
+            "hightorque_hi": 0.80,
+            "galaxea_r1pro": 0.80,
+            "berkeley_humanoid_lite": 0.75,
+            "pnd_adam_lite": 0.80,
+            "pnd_adam_inspire": 0.80,
+            "tienkung": 0.80,
+        }
+        default_height = default_heights.get(self.cfg.robot, 0.80)
+        
+        root_pos = np.array([0.0, 0.0, default_height])
         root_rot = np.array([0.0, 0.0, 0.0, 1.0])  # identity quaternion (xyzw)
-        dof_pos = np.zeros(23)  # G1 has 23 DOF
+        dof_pos = np.zeros(num_dof)
         
         motion_data = {
             "fps": self.motion_fps,

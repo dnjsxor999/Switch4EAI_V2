@@ -92,6 +92,7 @@ def main():
     parser.add_argument("--no-interpolation", action="store_true", help="Disable output interpolation (run at native 5Hz)")
     parser.add_argument("--num-interp", type=int, default=1, help="Number of interpolated frames (1=~10Hz, 2=~15Hz, 3=~20Hz, etc.)")
     parser.add_argument("--debug-timing", action="store_true", help="Print timing info for each UDP output (debug mode)")
+    parser.add_argument("--robot", type=str, default=None, help="Robot type (e.g., unitree_g1, unitree_h1, booster_t1, etc.). Default: unitree_g1")
     args = parser.parse_args()
 
     if args.list_cams:
@@ -124,6 +125,9 @@ def main():
     if args.video is not None:
         cfg.stream.source = "video"
         cfg.stream.video_path = args.video
+    if args.robot is not None:
+        cfg.gmr.robot = args.robot
+        print(f"Using robot: {args.robot}")
     
     pipeline = StreamToRobotPipeline(cfg)
     client = None
